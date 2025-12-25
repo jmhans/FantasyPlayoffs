@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { lusitana } from '@/app/ui/fonts';
 import { getStandings } from '@/app/lib/actions';
 
+export const dynamic = 'force-dynamic';
+
 export default async function Home() {
   const standings = await getStandings();
 

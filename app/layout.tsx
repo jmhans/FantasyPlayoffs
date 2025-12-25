@@ -1,6 +1,5 @@
 import '@/app/ui/global.css';
 import { inter } from '@/app/ui/fonts';
-import { UserProvider } from '@auth0/nextjs-auth0/client';
 
 export const metadata = {
   title: 'Fantasy Playoffs',
@@ -15,7 +14,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.className} antialiased`}>
-        <UserProvider>{children}</UserProvider>
+        {children}
       </body>
     </html>
   );

@@ -3,12 +3,15 @@ import { notFound } from 'next/navigation';
 import { lusitana } from '@/app/ui/fonts';
 import { getParticipantById, getRosterWithScores } from '@/app/lib/actions';
 
+export const dynamic = 'force-dynamic';
+
 export default async function RosterPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const id = parseInt(params.id);
+  const { id: idString } = await params;
+  const id = parseInt(idString);
   
   if (isNaN(id)) {
     notFound();
