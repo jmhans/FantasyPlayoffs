@@ -15,6 +15,20 @@
       "when": 1766760452128,
       "tag": "0001_loud_marvel_zombies",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1766785043096,
+      "tag": "0002_slow_mariko_yashida",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1766788341213,
+      "tag": "0003_colorful_mole_man",
+      "breakpoints": true
     }
   ]
 }

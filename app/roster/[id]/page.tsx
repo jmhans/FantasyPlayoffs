@@ -32,12 +32,20 @@ export default async function RosterPage({
           <h1 className={`${lusitana.className} text-white text-3xl md:text-4xl`}>
             {participant.name}&apos;s Roster
           </h1>
-          <Link
-            href="/"
-            className="flex h-10 items-center rounded-lg bg-white px-4 text-sm font-medium text-blue-600 transition-colors hover:bg-gray-100"
-          >
-            Back to Standings
-          </Link>
+          <div className="flex gap-2">
+            <Link
+              href={`/roster/${id}/add-player`}
+              className="flex h-10 items-center rounded-lg bg-green-600 px-4 text-sm font-medium text-white transition-colors hover:bg-green-500"
+            >
+              Add Player
+            </Link>
+            <Link
+              href="/"
+              className="flex h-10 items-center rounded-lg bg-white px-4 text-sm font-medium text-blue-600 transition-colors hover:bg-gray-100"
+            >
+              Back to Standings
+            </Link>
+          </div>
         </div>
       </div>
 
