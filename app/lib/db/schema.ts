@@ -1,16 +1,19 @@
-import { pgTable, text, serial, integer, timestamp, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, text, serial, integer, timestamp, boolean, pgSchema } from 'drizzle-orm/pg-core';
+
+// Create a dedicated schema for FantasyPlayoffs
+export const fantasyPlayoffsSchema = pgSchema('fantasy_playoffs');
 
 // Participants/Users table
-export const participants = pgTable('participants', {
+export const participants = fantasyPlayoffsSchema.table('participants', {
   id: serial('id').primaryKey(),
   name: text('name').notNull(),
-  email: text('email').notNull().unique(),
-  auth0Id: text('auth0_id').unique(),
+  email: text('email'),
+  auth0Id: text('auth0_id'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
 // Roster entries table
-export const rosterEntries = pgTable('roster_entries', {
+export const rosterEntries = fantasyPlayoffsSchema.table('roster_entries', {
   id: serial('id').primaryKey(),
   participantId: integer('participant_id')
     .notNull()
@@ -22,7 +25,7 @@ export const rosterEntries = pgTable('roster_entries', {
 });
 
 // Weekly scores table (4 weeks of playoffs)
-export const weeklyScores = pgTable('weekly_scores', {
+export const weeklyScores = fantasyPlayoffsSchema.table('weekly_scores', {
   id: serial('id').primaryKey(),
   rosterEntryId: integer('roster_entry_id')
     .notNull()
@@ -33,7 +36,7 @@ export const weeklyScores = pgTable('weekly_scores', {
 });
 
 // Season/playoff configuration
-export const seasonConfig = pgTable('season_config', {
+export const seasonConfig = fantasyPlayoffsSchema.table('season_config', {
   id: serial('id').primaryKey(),
   currentWeek: integer('current_week').notNull().default(1),
   seasonYear: integer('season_year').notNull(),
