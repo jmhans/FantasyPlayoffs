@@ -1,14 +1,12 @@
 import Link from 'next/link';
 import { lusitana } from '@/app/ui/fonts';
 import { getStandings } from '@/app/lib/actions';
-import { getSession } from '@auth0/nextjs-auth0';
+import UserDisplay from '@/app/ui/user-display';
 
 export const dynamic = 'force-dynamic';
 
 export default async function Home() {
   const standings = await getStandings();
-  const session = await getSession();
-  const user = session?.user;
 
   return (
     <main className="flex min-h-screen flex-col p-6">
@@ -27,26 +25,7 @@ export default async function Home() {
           >
             Add Participant
           </Link>
-          {user ? (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">
-                {user.name || user.email || user.nickname || user.sub}
-              </span>
-              <a
-                href="/api/auth/logout"
-                className="flex h-10 items-center rounded-lg bg-gray-600 px-4 text-sm font-medium text-white transition-colors hover:bg-gray-500"
-              >
-                Logout
-              </a>
-            </div>
-          ) : (
-            <a
-              href="/api/auth/login"
-              className="flex h-10 items-center rounded-lg bg-blue-600 px-4 text-sm font-medium text-white transition-colors hover:bg-blue-500"
-            >
-              Login
-            </a>
-          )}
+          <UserDisplay />
         </div>
       </div>
 
