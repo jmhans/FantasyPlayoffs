@@ -167,3 +167,20 @@ export async function claimParticipantAccount(participantId: number, auth0Id: st
     return { error: 'Failed to claim account' };
   }
 }
+
+export async function getParticipantsByAuth0Id(auth0Id: string) {
+  try {
+    const userParticipants = await db
+      .select({
+        id: participants.id,
+        name: participants.name,
+      })
+      .from(participants)
+      .where(eq(participants.auth0Id, auth0Id));
+    
+    return userParticipants;
+  } catch (error) {
+    console.error('Failed to get participants by auth0Id:', error);
+    return [];
+  }
+}

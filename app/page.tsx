@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { lusitana } from '@/app/ui/fonts';
 import { getStandings, claimParticipantAccount } from '@/app/lib/actions';
+import { isAdmin } from '@/app/lib/auth-utils';
 import UserDisplay from '@/app/ui/user-display';
 
 interface Participant {
@@ -19,6 +20,7 @@ export default function Home() {
   const [standings, setStandings] = useState<Participant[]>([]);
   const [claiming, setClaiming] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     loadStandings();
@@ -66,13 +68,29 @@ export default function Home() {
       
       <div className="mt-4 flex items-center justify-between gap-2 md:mt-8">
         <h2 className={`${lusitana.className} text-2xl`}>Participants</h2>
-        <div className="flex gap-2 items-center">
+        
+        {/* Desktop Navigation */}
+        <div className="hidden md:flex gap-2 items-center">
+          <Link
+            href="/draft"
+            className="flex h-10 items-center rounded-lg bg-blue-600 px-4 text-sm font-medium text-white transition-colors hover:bg-blue-500"
+          >
+            Draft
+          </Link>
           <Link
             href="/scores"
             className="flex h-10 items-center rounded-lg bg-purple-600 px-4 text-sm font-medium text-white transition-colors hover:bg-purple-500"
           >
             Live Scores
           </Link>
+          {user && isAdmin(user) && (
+            <Link
+              href="/admin"
+              className="flex h-10 items-center rounded-lg bg-orange-600 px-4 text-sm font-medium text-white transition-colors hover:bg-orange-500"
+            >
+              Admin
+            </Link>
+          )}
           {user && (
             <Link
               href="/participants/create"
@@ -82,6 +100,69 @@ export default function Home() {
             </Link>
           )}
           <UserDisplay />
+        </div>
+
+        {/* Mobile Navigation */}
+        <div className="md:hidden flex items-center gap-2">
+          <UserDisplay />
+          <div className="relative">
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-200 hover:bg-gray-300 transition-colors"
+              aria-label="Menu"
+            >
+              <svg
+                className="h-6 w-6"
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path d="M4 6h16M4 12h16M4 18h16"></path>
+              </svg>
+            </button>
+            
+            {menuOpen && (
+              <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
+                <div className="py-1" role="menu">
+                  <Link
+                    href="/draft"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    Draft
+                  </Link>
+                  <Link
+                    href="/scores"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    Live Scores
+                  </Link>
+                  {user && isAdmin(user) && (
+                    <Link
+                      href="/admin"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      Admin
+                    </Link>
+                  )}
+                  {user && (
+                    <Link
+                      href="/participants/create"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      Add Participant
+                    </Link>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -160,17 +241,17 @@ export default function Home() {
               {standings.map((participant, index) => (
                 <div
                   key={participant.participantId}
-                  className="mb-2 w-full rounded-md bg-white p-4"
+                  className="mb-2 w-full rounded-md bg-white p-3"
                 >
-                  <div className="flex items-center justify-between border-b pb-4">
-                    <div>
-                      <div className="mb-2 flex items-center">
-                        <span className="text-xl font-bold mr-2">#{index + 1}</span>
-                        <p className="text-lg font-medium">
+                  <div className="flex items-start justify-between pb-2">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-lg font-bold">#{index + 1}</span>
+                        <p className="text-base font-medium">
                           {participant.participantName}
                         </p>
                         {!participant.auth0Id && (
-                          <span className="ml-2 inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800">
+                          <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800">
                             Unclaimed
                           </span>
                         )}
@@ -179,24 +260,22 @@ export default function Home() {
                         {participant.totalPoints.toFixed(2)} points
                       </p>
                     </div>
-                  </div>
-                  <div className="flex w-full items-center justify-end gap-2 pt-4">
                     <Link
                       href={`/roster/${participant.participantId}`}
-                      className="rounded-md border p-2 hover:bg-gray-100"
+                      className="rounded-md border px-3 py-1.5 text-sm hover:bg-gray-100 whitespace-nowrap"
                     >
                       View Roster
                     </Link>
-                    {!participant.auth0Id && user && (
-                      <button
-                        onClick={() => handleClaimAccount(participant.participantId)}
-                        disabled={claiming === participant.participantId}
-                        className="rounded-md border border-blue-500 bg-blue-500 p-2 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:border-gray-300 disabled:cursor-not-allowed"
-                      >
-                        {claiming === participant.participantId ? 'Claiming...' : 'Claim Account'}
-                      </button>
-                    )}
                   </div>
+                  {!participant.auth0Id && user && (
+                    <button
+                      onClick={() => handleClaimAccount(participant.participantId)}
+                      disabled={claiming === participant.participantId}
+                      className="w-full mt-2 rounded-md border border-blue-500 bg-blue-500 py-2 text-sm text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:border-gray-300 disabled:cursor-not-allowed"
+                    >
+                      {claiming === participant.participantId ? 'Claiming...' : 'Claim Account'}
+                    </button>
+                  )}
                 </div>
               ))}
             </div>

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { lusitana } from '@/app/ui/fonts';
 import { getParticipantById, getRosterWithScores } from '@/app/lib/actions';
+import HomeButton from '@/app/ui/home-button';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,12 +40,7 @@ export default async function RosterPage({
             >
               Add Player
             </Link>
-            <Link
-              href="/"
-              className="flex h-10 items-center rounded-lg bg-white px-4 text-sm font-medium text-blue-600 transition-colors hover:bg-gray-100"
-            >
-              Back to Standings
-            </Link>
+            <HomeButton />
           </div>
         </div>
       </div>

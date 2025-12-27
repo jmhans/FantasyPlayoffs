@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { lusitana } from '@/app/ui/fonts';
+import HomeButton from '@/app/ui/home-button';
 import { createNewDraft, getCurrentDraft } from '@/app/lib/draft-actions';
 
 export default function AdminDraftPage() {
@@ -63,12 +64,7 @@ export default function AdminDraftPage() {
           <h1 className={`${lusitana.className} text-white text-3xl md:text-4xl`}>
             Draft Administration
           </h1>
-          <Link
-            href="/"
-            className="flex h-10 items-center rounded-lg bg-white px-4 text-sm font-medium text-blue-600 transition-colors hover:bg-gray-100"
-          >
-            Back to Home
-          </Link>
+          <HomeButton />
         </div>
       </div>
 

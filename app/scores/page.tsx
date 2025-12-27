@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { lusitana } from '@/app/ui/fonts';
 import { getLivePlayerStats } from '@/app/lib/scoring-actions';
+import HomeButton from '@/app/ui/home-button';
 
 interface PlayerStats {
   playerId: number | null;
@@ -28,7 +29,8 @@ export default function ScoresPage() {
   const [stats, setStats] = useState<PlayerStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+  const [lastUpdate, setLastUpdate] = useState(new Date());
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const currentYear = new Date().getFullYear();
 
   const loadStats = async () => {
@@ -72,6 +74,16 @@ export default function ScoresPage() {
     return parts.join(' | ') || 'No stats';
   };
 
+  const toggleRow = (espnId: string) => {
+    const newExpanded = new Set(expandedRows);
+    if (newExpanded.has(espnId)) {
+      newExpanded.delete(espnId);
+    } else {
+      newExpanded.add(espnId);
+    }
+    setExpandedRows(newExpanded);
+  };
+
   const sortedStats = [...stats].sort((a, b) => b.fantasyPoints - a.fantasyPoints);
 
   return (
@@ -81,12 +93,7 @@ export default function ScoresPage() {
           <h1 className={`${lusitana.className} text-white text-3xl md:text-4xl`}>
             Live Player Stats
           </h1>
-          <Link
-            href="/"
-            className="flex h-10 items-center rounded-lg bg-white px-4 text-sm font-medium text-blue-600 transition-colors hover:bg-gray-100"
-          >
-            Back to Home
-          </Link>
+          <HomeButton />
         </div>
       </div>
 
@@ -131,7 +138,7 @@ export default function ScoresPage() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Pos
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Stats
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -144,34 +151,62 @@ export default function ScoresPage() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {sortedStats.map((player) => (
-                <tr key={player.espnId} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {player.playerName}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {player.team}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {player.position}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
-                    {formatStatLine(player)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-blue-600">
-                    {player.fantasyPoints.toFixed(1)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      player.gameStatus === 'in' 
-                        ? 'bg-green-100 text-green-800'
-                        : player.gameStatus === 'post'
-                        ? 'bg-gray-100 text-gray-800'
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {player.gameStatus === 'in' ? 'Live' : player.gameStatus === 'post' ? 'Final' : 'Scheduled'}
-                    </span>
-                  </td>
-                </tr>
+                <>
+                  <tr key={player.espnId} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => toggleRow(player.espnId)}
+                          className="md:hidden text-gray-400 hover:text-gray-600"
+                        >
+                          <svg
+                            className={`h-4 w-4 transition-transform ${expandedRows.has(player.espnId) ? 'rotate-90' : ''}`}
+                            fill="none"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path d="M9 5l7 7-7 7"></path>
+                          </svg>
+                        </button>
+                        {player.playerName}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {player.team}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {player.position}
+                    </td>
+                    <td className="hidden md:table-cell px-6 py-4 text-sm text-gray-500">
+                      {formatStatLine(player)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-blue-600">
+                      {player.fantasyPoints.toFixed(1)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        player.gameStatus === 'in' 
+                          ? 'bg-green-100 text-green-800'
+                          : player.gameStatus === 'post'
+                          ? 'bg-gray-100 text-gray-800'
+                          : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {player.gameStatus === 'in' ? 'Live' : player.gameStatus === 'post' ? 'Final' : 'Scheduled'}
+                      </span>
+                    </td>
+                  </tr>
+                  {expandedRows.has(player.espnId) && (
+                    <tr className="md:hidden bg-gray-50">
+                      <td colSpan={6} className="px-6 py-3 text-sm text-gray-700">
+                        <div className="font-medium text-gray-500 text-xs uppercase mb-1">Stats</div>
+                        {formatStatLine(player)}
+                      </td>
+                    </tr>
+                  )}
+                </>
               ))}
             </tbody>
           </table>

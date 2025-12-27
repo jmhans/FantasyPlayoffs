@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { lusitana } from '@/app/ui/fonts';
+import HomeButton from '@/app/ui/home-button';
 import { getCurrentDraft, getDraftPicks, makeDraftPick, getCurrentPicker } from '@/app/lib/draft-actions';
 import { searchPlayers } from '@/app/lib/player-actions';
 import { isAdmin } from '@/app/lib/auth-utils';
@@ -187,12 +188,7 @@ export default function DraftBoardPage() {
         </div>
         <div className="mt-6 rounded-lg bg-yellow-50 p-6 text-center">
           <p className="text-gray-600">No active draft found. Contact admin to create a draft.</p>
-          <Link
-            href="/"
-            className="mt-4 inline-block rounded-lg bg-blue-600 px-6 py-3 text-sm font-medium text-white hover:bg-blue-500"
-          >
-            Back to Home
-          </Link>
+          <HomeButton className="mt-4 bg-blue-600 text-white hover:bg-blue-500" />
         </div>
       </main>
     );
@@ -220,12 +216,7 @@ export default function DraftBoardPage() {
           <h1 className={`${lusitana.className} text-white text-3xl md:text-4xl`}>
             Draft Board - Round {Math.min(draft.currentRound, draft.totalRounds)}/{draft.totalRounds}
           </h1>
-          <Link
-            href="/"
-            className="flex h-10 items-center rounded-lg bg-white px-4 text-sm font-medium text-blue-600 transition-colors hover:bg-gray-100"
-          >
-            Back to Home
-          </Link>
+          <HomeButton />
         </div>
       </div>
 

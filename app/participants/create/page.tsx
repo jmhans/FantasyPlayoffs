@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { lusitana } from '@/app/ui/fonts';
 import { createParticipant } from '@/app/lib/participant-actions';
+import HomeButton from '@/app/ui/home-button';
 import { useState } from 'react';
 
 export default function CreateParticipantPage() {
@@ -34,12 +35,7 @@ export default function CreateParticipantPage() {
           <h1 className={`${lusitana.className} text-white text-3xl md:text-4xl`}>
             Add New Participant
           </h1>
-          <Link
-            href="/"
-            className="flex h-10 items-center rounded-lg bg-white px-4 text-sm font-medium text-blue-600 transition-colors hover:bg-gray-100"
-          >
-            Back to Standings
-          </Link>
+          <HomeButton />
         </div>
       </div>
 

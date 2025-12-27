@@ -27,12 +27,7 @@ export default function SyncPlayersPage() {
           <h1 className={`${lusitana.className} text-white text-3xl md:text-4xl`}>
             Sync NFL Players
           </h1>
-          <Link
-            href="/"
-            className="flex h-10 items-center rounded-lg bg-white px-4 text-sm font-medium text-blue-600 transition-colors hover:bg-gray-100"
-          >
-            Back to Home
-          </Link>
+          <HomeButton />
         </div>
       </div>
 
