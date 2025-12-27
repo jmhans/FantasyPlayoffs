@@ -15,4 +15,7 @@ export default defineConfig({
   dbCredentials: {
     url: process.env.POSTGRES_URL,
   },
+  schemaFilter: ['fantasy_playoffs'], // Only work with fantasy_playoffs schema
+  verbose: true,
+  strict: true,
 });
