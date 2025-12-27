@@ -27,12 +27,26 @@ export const participants = fantasyPlayoffsSchema.table('participants', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
+// Seasons table - tracks which participants are active in which season
+export const seasons = fantasyPlayoffsSchema.table('seasons', {
+  id: serial('id').primaryKey(),
+  participantId: integer('participant_id')
+    .notNull()
+    .references(() => participants.id, { onDelete: 'cascade' }),
+  year: integer('year').notNull(),
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
 // Roster entries table
 export const rosterEntries = fantasyPlayoffsSchema.table('roster_entries', {
   id: serial('id').primaryKey(),
   participantId: integer('participant_id')
     .notNull()
     .references(() => participants.id, { onDelete: 'cascade' }),
+  seasonId: integer('season_id')
+    .notNull()
+    .references(() => seasons.id, { onDelete: 'cascade' }),
   playerId: integer('player_id')
     .references(() => players.id, { onDelete: 'set null' }),
   playerName: text('player_name').notNull(), // Denormalized for display
@@ -106,6 +120,9 @@ export const draftPicks = fantasyPlayoffsSchema.table('draft_picks', {
 
 export type Participant = typeof participants.$inferSelect;
 export type NewParticipant = typeof participants.$inferInsert;
+
+export type Season = typeof seasons.$inferSelect;
+export type NewSeason = typeof seasons.$inferInsert;
 
 export type Player = typeof players.$inferSelect;
 export type NewPlayer = typeof players.$inferInsert;

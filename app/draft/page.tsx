@@ -41,27 +41,34 @@ export default function DraftBoardPage() {
 
   // Track picks length to only re-filter when it actually changes
   const [lastPicksCount, setLastPicksCount] = useState(0);
+  const [lastSearchQuery, setLastSearchQuery] = useState('');
 
   useEffect(() => {
-    // Only search if we have picks loaded
-    if (picks.length === 0 && draft) {
+    // Only search if we have draft loaded
+    if (!draft) return;
+    
+    // Only search if we have picks loaded on first load
+    if (picks.length === 0 && lastPicksCount === 0) {
       // First load after draft is fetched
       loadPlayers();
+      setLastPicksCount(picks.length);
+      setLastSearchQuery(searchQuery);
       return;
     }
 
-    // Only re-filter if picks count changed (new pick made) or search query changed
-    if (picks.length === lastPicksCount && searchQuery === searchQuery) {
+    // Skip if nothing changed
+    if (picks.length === lastPicksCount && searchQuery === lastSearchQuery) {
       return;
     }
     
     const delayDebounce = setTimeout(() => {
       loadPlayers();
       setLastPicksCount(picks.length);
+      setLastSearchQuery(searchQuery);
     }, 300);
 
     return () => clearTimeout(delayDebounce);
-  }, [searchQuery, picks.length]); // Only depend on picks.length, not entire picks array
+  }, [searchQuery, picks.length, draft]); // Depend on draft, search query, and picks length
 
   useEffect(() => {
     if (!autoRefresh) return;
@@ -211,7 +218,7 @@ export default function DraftBoardPage() {
       <div className="flex h-20 shrink-0 items-end rounded-lg bg-blue-500 p-4 md:h-32">
         <div className="flex items-center justify-between w-full">
           <h1 className={`${lusitana.className} text-white text-3xl md:text-4xl`}>
-            Draft Board - Round {draft.currentRound}/{draft.totalRounds}
+            Draft Board - Round {Math.min(draft.currentRound, draft.totalRounds)}/{draft.totalRounds}
           </h1>
           <Link
             href="/"

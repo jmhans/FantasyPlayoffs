@@ -1,12 +1,58 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useUser } from '@auth0/nextjs-auth0/client';
 import { lusitana } from '@/app/ui/fonts';
-import { getStandings } from '@/app/lib/actions';
+import { getStandings, claimParticipantAccount } from '@/app/lib/actions';
 import UserDisplay from '@/app/ui/user-display';
 
-export const dynamic = 'force-dynamic';
+interface Participant {
+  participantId: number;
+  participantName: string;
+  auth0Id: string | null;
+  totalPoints: number;
+}
 
-export default async function Home() {
-  const standings = await getStandings();
+export default function Home() {
+  const { user } = useUser();
+  const [standings, setStandings] = useState<Participant[]>([]);
+  const [claiming, setClaiming] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadStandings();
+  }, []);
+
+  const loadStandings = async () => {
+    try {
+      const data = await getStandings();
+      setStandings(data);
+    } catch (err) {
+      console.error('Error loading standings:', err);
+    }
+  };
+
+  const handleClaimAccount = async (participantId: number) => {
+    if (!user?.sub) {
+      setError('You must be logged in to claim an account');
+      return;
+    }
+
+    setClaiming(participantId);
+    setError(null);
+
+    const result = await claimParticipantAccount(participantId, user.sub);
+
+    if (result.error) {
+      setError(result.error);
+    } else {
+      // Reload standings to reflect the change
+      await loadStandings();
+    }
+
+    setClaiming(null);
+  };
 
   return (
     <main className="flex min-h-screen flex-col p-6">
@@ -20,6 +66,12 @@ export default async function Home() {
         <h2 className={`${lusitana.className} text-2xl`}>Participants</h2>
         <div className="flex gap-2 items-center">
           <Link
+            href="/scores"
+            className="flex h-10 items-center rounded-lg bg-purple-600 px-4 text-sm font-medium text-white transition-colors hover:bg-purple-500"
+          >
+            Live Scores
+          </Link>
+          <Link
             href="/participants/create"
             className="flex h-10 items-center rounded-lg bg-green-600 px-4 text-sm font-medium text-white transition-colors hover:bg-green-500"
           >
@@ -28,6 +80,12 @@ export default async function Home() {
           <UserDisplay />
         </div>
       </div>
+
+      {error && (
+        <div className="mt-4 rounded-md bg-red-50 p-4 text-sm text-red-800">
+          {error}
+        </div>
+      )}
 
       <div className="mt-6 flow-root">
         <div className="inline-block min-w-full align-middle">
@@ -60,17 +118,33 @@ export default async function Home() {
                     </td>
                     <td className="whitespace-nowrap px-3 py-3">
                       {participant.participantName}
+                      {!participant.auth0Id && (
+                        <span className="ml-2 inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800">
+                          Unclaimed
+                        </span>
+                      )}
                     </td>
                     <td className="whitespace-nowrap px-3 py-3">
-                      {participant.totalPoints}
+                      {participant.totalPoints.toFixed(2)}
                     </td>
                     <td className="whitespace-nowrap py-3 pl-6 pr-3">
-                      <Link
-                        href={`/roster/${participant.participantId}`}
-                        className="rounded-md border p-2 hover:bg-gray-100"
-                      >
-                        View Roster
-                      </Link>
+                      <div className="flex justify-end gap-3">
+                        <Link
+                          href={`/roster/${participant.participantId}`}
+                          className="rounded-md border p-2 hover:bg-gray-100"
+                        >
+                          View Roster
+                        </Link>
+                        {!participant.auth0Id && user && (
+                          <button
+                            onClick={() => handleClaimAccount(participant.participantId)}
+                            disabled={claiming === participant.participantId}
+                            className="rounded-md border border-blue-500 bg-blue-500 p-2 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:border-gray-300 disabled:cursor-not-allowed"
+                          >
+                            {claiming === participant.participantId ? 'Claiming...' : 'Claim Account'}
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -91,19 +165,33 @@ export default async function Home() {
                         <p className="text-lg font-medium">
                           {participant.participantName}
                         </p>
+                        {!participant.auth0Id && (
+                          <span className="ml-2 inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800">
+                            Unclaimed
+                          </span>
+                        )}
                       </div>
                       <p className="text-sm text-gray-500">
-                        {participant.totalPoints} points
+                        {participant.totalPoints.toFixed(2)} points
                       </p>
                     </div>
                   </div>
-                  <div className="flex w-full items-center justify-end pt-4">
+                  <div className="flex w-full items-center justify-end gap-2 pt-4">
                     <Link
                       href={`/roster/${participant.participantId}`}
                       className="rounded-md border p-2 hover:bg-gray-100"
                     >
                       View Roster
                     </Link>
+                    {!participant.auth0Id && user && (
+                      <button
+                        onClick={() => handleClaimAccount(participant.participantId)}
+                        disabled={claiming === participant.participantId}
+                        className="rounded-md border border-blue-500 bg-blue-500 p-2 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:border-gray-300 disabled:cursor-not-allowed"
+                      >
+                        {claiming === participant.participantId ? 'Claiming...' : 'Claim Account'}
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

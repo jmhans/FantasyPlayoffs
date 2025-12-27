@@ -103,17 +103,63 @@ export async function getStandings() {
       .select({
         participantId: participants.id,
         participantName: participants.name,
+        auth0Id: participants.auth0Id,
         totalPoints: sql<number>`COALESCE(SUM(${weeklyScores.points}), 0)`,
       })
       .from(participants)
       .leftJoin(rosterEntries, eq(participants.id, rosterEntries.participantId))
       .leftJoin(weeklyScores, eq(rosterEntries.id, weeklyScores.rosterEntryId))
-      .groupBy(participants.id, participants.name)
+      .groupBy(participants.id, participants.name, participants.auth0Id)
       .orderBy(sql`COALESCE(SUM(${weeklyScores.points}), 0) DESC`);
 
-    return result;
+    // Convert totalPoints to number (it comes as string from SQL aggregate)
+    return result.map(row => ({
+      ...row,
+      totalPoints: Number(row.totalPoints) || 0,
+    }));
   } catch (error) {
     console.error('Failed to fetch standings:', error);
     throw new Error('Failed to fetch standings');
+  }
+}
+
+export async function claimParticipantAccount(participantId: number, auth0Id: string) {
+  try {
+    // Check if this auth0Id is already claimed
+    const existing = await db
+      .select()
+      .from(participants)
+      .where(eq(participants.auth0Id, auth0Id))
+      .limit(1);
+    
+    if (existing.length > 0) {
+      return { error: 'You have already claimed an account' };
+    }
+    
+    // Check if the participant exists and is unclaimed
+    const participant = await db
+      .select()
+      .from(participants)
+      .where(eq(participants.id, participantId))
+      .limit(1);
+    
+    if (participant.length === 0) {
+      return { error: 'Participant not found' };
+    }
+    
+    if (participant[0].auth0Id) {
+      return { error: 'This participant has already been claimed' };
+    }
+    
+    // Claim the account
+    await db
+      .update(participants)
+      .set({ auth0Id })
+      .where(eq(participants.id, participantId));
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to claim participant account:', error);
+    return { error: 'Failed to claim account' };
   }
 }

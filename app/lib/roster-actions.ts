@@ -1,12 +1,48 @@
 'use server';
 
 import { db } from '@/app/lib/db';
-import { rosterEntries, players } from '@/app/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { rosterEntries, players, seasons } from '@/app/lib/db/schema';
+import { eq, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
+
+/**
+ * Get or create a season for a participant
+ */
+async function getOrCreateSeason(participantId: number, year: number) {
+  // Check if season exists
+  const existingSeason = await db
+    .select()
+    .from(seasons)
+    .where(and(
+      eq(seasons.participantId, participantId),
+      eq(seasons.year, year)
+    ))
+    .limit(1);
+  
+  if (existingSeason.length > 0) {
+    return existingSeason[0].id;
+  }
+  
+  // Create new season
+  const newSeason = await db
+    .insert(seasons)
+    .values({
+      participantId,
+      year,
+      isActive: true,
+    })
+    .returning();
+  
+  return newSeason[0].id;
+}
 
 export async function addPlayerToRoster(participantId: number, playerId: number) {
   try {
+    const currentYear = new Date().getFullYear();
+    
+    // Get or create season
+    const seasonId = await getOrCreateSeason(participantId, currentYear);
+    
     // Get player details
     const player = await db
       .select()
@@ -23,6 +59,7 @@ export async function addPlayerToRoster(participantId: number, playerId: number)
     // Add to roster
     await db.insert(rosterEntries).values({
       participantId,
+      seasonId,
       playerId,
       playerName: playerData.name,
       position: playerData.position,

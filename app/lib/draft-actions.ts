@@ -1,9 +1,38 @@
 'use server';
 
 import { db } from '@/app/lib/db';
-import { drafts, draftOrder, draftPicks, rosterEntries, participants, players } from '@/app/lib/db/schema';
+import { drafts, draftOrder, draftPicks, rosterEntries, participants, players, seasons } from '@/app/lib/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
+
+/**
+ * Get or create a season for a participant
+ */
+async function getOrCreateSeason(participantId: number, year: number) {
+  const existingSeason = await db
+    .select()
+    .from(seasons)
+    .where(and(
+      eq(seasons.participantId, participantId),
+      eq(seasons.year, year)
+    ))
+    .limit(1);
+  
+  if (existingSeason.length > 0) {
+    return existingSeason[0].id;
+  }
+  
+  const newSeason = await db
+    .insert(seasons)
+    .values({
+      participantId,
+      year,
+      isActive: true,
+    })
+    .returning();
+  
+  return newSeason[0].id;
+}
 
 export async function createNewDraft(seasonYear: number, totalRounds: number) {
   try {
@@ -15,7 +44,16 @@ export async function createNewDraft(seasonYear: number, totalRounds: number) {
     }
 
     // Clear all existing rosters for this season
-    await db.delete(rosterEntries);
+    const seasonIds = await db
+      .select({ id: seasons.id })
+      .from(seasons)
+      .where(eq(seasons.year, seasonYear));
+    
+    if (seasonIds.length > 0) {
+      await db.delete(rosterEntries).where(
+        eq(rosterEntries.seasonId, seasonIds[0].id)
+      );
+    }
 
     // Delete any existing draft for this season
     const existingDrafts = await db
@@ -214,8 +252,12 @@ export async function makeDraftPick(draftId: number, participantId: number, play
       .limit(1);
 
     if (player) {
+      // Get or create season for participant
+      const seasonId = await getOrCreateSeason(participantId, draft.seasonYear);
+      
       await db.insert(rosterEntries).values({
         participantId,
+        seasonId,
         playerId,
         playerName: player.name,
         position: player.position,

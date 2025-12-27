@@ -29,6 +29,13 @@
       "when": 1766788341213,
       "tag": "0003_colorful_mole_man",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1766844513432,
+      "tag": "0004_brown_wolf_cub",
+      "breakpoints": true
     }
   ]
 }
