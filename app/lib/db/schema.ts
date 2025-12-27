@@ -14,6 +14,8 @@ export const players = fantasyPlayoffsSchema.table('players', {
   status: text('status'), // ACTIVE, INJURED, etc.
   imageUrl: text('image_url'),
   metadata: json('metadata'), // Store additional ESPN data
+  projectedPoints: integer('projected_points'), // Projected fantasy points from Sleeper
+  projectionsUpdatedAt: timestamp('projections_updated_at'), // When projections were last synced
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

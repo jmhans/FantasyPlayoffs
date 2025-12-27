@@ -19,6 +19,7 @@ interface PlayerStats {
   receivingYards: number;
   receivingTouchdowns: number;
   fantasyPoints: number;
+  projectedPoints: number | null;
   gameStatus: 'pre' | 'in' | 'post';
   lastUpdated: Date;
 }
@@ -52,6 +53,7 @@ async function getActiveRosterPlayers(seasonYear: number) {
         position: rosterEntries.position,
         team: rosterEntries.team,
         espnId: players.espnId,
+        projectedPoints: players.projectedPoints,
       })
       .from(rosterEntries)
       .innerJoin(players, eq(rosterEntries.playerId, players.id))
@@ -248,6 +250,7 @@ export async function getLivePlayerStats(seasonYear: number): Promise<PlayerStat
             receivingYards: espnStats.receivingYards || 0,
             receivingTouchdowns: espnStats.receivingTouchdowns || 0,
             fantasyPoints: 0,
+            projectedPoints: rosterPlayer.projectedPoints || null,
             gameStatus,
             lastUpdated: new Date(),
           };

@@ -94,6 +94,28 @@ export default function AdminPage() {
           </div>
         </Link>
 
+        {/* Sync Projections Card */}
+        <Link
+          href="/admin/sync-projections"
+          className="group rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition-all hover:border-blue-500 hover:shadow-md"
+        >
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-purple-100 text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors">
+              <svg className="h-6 w-6" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 group-hover:text-purple-600">
+                Sync Projections
+              </h2>
+              <p className="text-sm text-gray-500">
+                Update player projections
+              </p>
+            </div>
+          </div>
+        </Link>
+
         {/* Future Admin Features */}
         <div className="rounded-lg border border-gray-200 bg-gray-50 p-6 shadow-sm opacity-60">
           <div className="flex items-center gap-4">
@@ -118,6 +140,7 @@ export default function AdminPage() {
         <h3 className="text-lg font-semibold text-gray-900 mb-2">Quick Tips</h3>
         <ul className="list-disc list-inside space-y-1 text-sm text-gray-700">
           <li>Sync players before creating a new draft to get the latest NFL roster</li>
+          <li>Sync projections weekly to update projected fantasy points from Sleeper</li>
           <li>Draft management allows you to create drafts and reset if needed</li>
           <li>Only users with admin role can access these features</li>
         </ul>

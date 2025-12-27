@@ -21,6 +21,7 @@ interface PlayerStats {
   receivingYards: number;
   receivingTouchdowns: number;
   fantasyPoints: number;
+  projectedPoints: number | null;
   gameStatus: 'pre' | 'in' | 'post';
   lastUpdated: Date;
 }
@@ -142,7 +143,10 @@ export default function ScoresPage() {
                   Stats
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Fantasy Pts
+                  Proj
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actual
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
@@ -182,6 +186,9 @@ export default function ScoresPage() {
                     </td>
                     <td className="hidden md:table-cell px-6 py-4 text-sm text-gray-500">
                       {formatStatLine(player)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {player.projectedPoints !== null ? player.projectedPoints.toFixed(1) : '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-blue-600">
                       {player.fantasyPoints.toFixed(1)}
