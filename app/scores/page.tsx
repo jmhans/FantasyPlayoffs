@@ -6,7 +6,7 @@ import { lusitana } from '@/app/ui/fonts';
 import { getLivePlayerStats } from '@/app/lib/scoring-actions';
 
 interface PlayerStats {
-  playerId: number;
+  playerId: number | null;
   playerName: string;
   espnId: string;
   team: string;
