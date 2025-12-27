@@ -26,7 +26,9 @@ export default function Home() {
 
   const loadStandings = async () => {
     try {
+      console.log('[Client] Loading standings...');
       const data = await getStandings();
+      console.log('[Client] Received data:', data);
       setStandings(data);
     } catch (err) {
       console.error('Error loading standings:', err);
@@ -71,12 +73,14 @@ export default function Home() {
           >
             Live Scores
           </Link>
-          <Link
-            href="/participants/create"
-            className="flex h-10 items-center rounded-lg bg-green-600 px-4 text-sm font-medium text-white transition-colors hover:bg-green-500"
-          >
-            Add Participant
-          </Link>
+          {user && (
+            <Link
+              href="/participants/create"
+              className="flex h-10 items-center rounded-lg bg-green-600 px-4 text-sm font-medium text-white transition-colors hover:bg-green-500"
+            >
+              Add Participant
+            </Link>
+          )}
           <UserDisplay />
         </div>
       </div>

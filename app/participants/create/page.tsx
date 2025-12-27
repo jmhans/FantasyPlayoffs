@@ -82,18 +82,18 @@ export default function CreateParticipantPage() {
               {!isLoading && user && (
                 <div className="mb-6">
                   <label htmlFor="auth0Id" className="mb-2 block text-sm font-medium">
-                    Auth0 ID
+                    Auth0 ID (Optional)
                   </label>
                   <input
                     id="auth0Id"
                     name="auth0Id"
                     type="text"
                     defaultValue={user.sub || ''}
-                    className="block w-full rounded-md border border-gray-200 py-2 px-3 text-sm outline-2 bg-gray-100"
-                    readOnly
+                    placeholder="Leave empty if participant doesn't have an Auth0 account yet"
+                    className="block w-full rounded-md border border-gray-200 py-2 px-3 text-sm outline-2 placeholder:text-gray-500"
                   />
                   <p className="mt-1 text-xs text-gray-500">
-                    This participant will be linked to your logged-in account
+                    You can edit or clear this field. Empty means the participant can claim their account later.
                   </p>
                 </div>
               )}

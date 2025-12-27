@@ -99,6 +99,7 @@ export async function getRosterWithScores(participantId: number) {
 // Get participant standings
 export async function getStandings() {
   try {
+    console.log('[getStandings] Starting query...');
     const result = await db
       .select({
         participantId: participants.id,
@@ -111,6 +112,9 @@ export async function getStandings() {
       .leftJoin(weeklyScores, eq(rosterEntries.id, weeklyScores.rosterEntryId))
       .groupBy(participants.id, participants.name, participants.auth0Id)
       .orderBy(sql`COALESCE(SUM(${weeklyScores.points}), 0) DESC`);
+
+    console.log('[getStandings] Found', result.length, 'participants');
+    console.log('[getStandings] Sample:', result.slice(0, 2));
 
     // Convert totalPoints to number (it comes as string from SQL aggregate)
     return result.map(row => ({
