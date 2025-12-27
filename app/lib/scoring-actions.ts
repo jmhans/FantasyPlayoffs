@@ -5,7 +5,7 @@ import { players, rosterEntries, seasons } from '@/app/lib/db/schema';
 import { eq, inArray, and } from 'drizzle-orm';
 
 interface PlayerStats {
-  playerId: number;
+  playerId: number | null;
   playerName: string;
   espnId: string;
   team: string;
