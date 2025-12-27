@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { lusitana } from '@/app/ui/fonts';
+import HomeButton from '@/app/ui/home-button';
 import { syncPlayersFromESPN } from '@/app/lib/player-actions';
 
 export default function SyncPlayersPage() {
