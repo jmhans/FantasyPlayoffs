@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp, boolean, pgSchema, json } from 'drizzle-orm/pg-core';
+import { pgTable, text, serial, integer, timestamp, boolean, pgSchema, json, real } from 'drizzle-orm/pg-core';
 
 // Create a dedicated schema for FantasyPlayoffs
 export const fantasyPlayoffsSchema = pgSchema('fantasy_playoffs');
@@ -14,6 +14,24 @@ export const players = fantasyPlayoffsSchema.table('players', {
   status: text('status'), // ACTIVE, INJURED, etc.
   imageUrl: text('image_url'),
   metadata: json('metadata'), // Store additional ESPN data
+  projectedPoints: integer('projected_points'), // Projected fantasy points from Sleeper
+  projectionsUpdatedAt: timestamp('projections_updated_at'), // When projections were last synced
+  isDraftEligible: boolean('is_draft_eligible').notNull().default(true), // Whether player is eligible for draft
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Weekly actuals table - stores actual fantasy points scored by players each week
+export const weeklyActuals = fantasyPlayoffsSchema.table('weekly_actuals', {
+  id: serial('id').primaryKey(),
+  playerId: integer('player_id')
+    .notNull()
+    .references(() => players.id, { onDelete: 'cascade' }),
+  espnId: text('espn_id').notNull(), // Denormalized for easier querying
+  season: integer('season').notNull(),
+  week: integer('week').notNull(),
+  fantasyPoints: real('fantasy_points').notNull(), // Actual fantasy points scored (decimal)
+  stats: json('stats'), // Raw ESPN stats for the week
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
@@ -62,7 +80,7 @@ export const weeklyScores = fantasyPlayoffsSchema.table('weekly_scores', {
     .notNull()
     .references(() => rosterEntries.id, { onDelete: 'cascade' }),
   week: integer('week').notNull(), // 1-4 for playoff weeks
-  points: integer('points').notNull().default(0),
+  points: real('points').notNull().default(0),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 

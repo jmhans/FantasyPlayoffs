@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { lusitana } from '@/app/ui/fonts';
 import { getLivePlayerStats } from '@/app/lib/scoring-actions';
@@ -21,6 +21,7 @@ interface PlayerStats {
   receivingYards: number;
   receivingTouchdowns: number;
   fantasyPoints: number;
+  projectedPoints: number | null;
   gameStatus: 'pre' | 'in' | 'post';
   lastUpdated: Date;
 }
@@ -29,34 +30,47 @@ export default function ScoresPage() {
   const [stats, setStats] = useState<PlayerStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [lastUpdate, setLastUpdate] = useState(new Date());
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
-  const currentYear = new Date().getFullYear();
+  const [selectedWeek, setSelectedWeek] = useState<number | undefined>(18); // Default to week 18
+  const [mounted, setMounted] = useState(false);
+  
+  // NFL season year logic: If we're in Jan-July, use previous year (season started previous September)
+  const now = new Date();
+  const currentYear = now.getMonth() < 8 ? now.getFullYear() - 1 : now.getFullYear();
 
-  const loadStats = async () => {
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const loadStats = useCallback(async () => {
     try {
-      const data = await getLivePlayerStats(currentYear);
+      console.log(`[Client] Loading stats for year ${currentYear}, week ${selectedWeek || 'live'}`);
+      const data = await getLivePlayerStats(currentYear, selectedWeek);
+      console.log(`[Client] Received ${data.length} player stats:`, data);
       setStats(data);
       setLastUpdate(new Date());
       setError(null);
     } catch (err) {
-      console.error('Error loading stats:', err);
+      console.error('[Client] Error loading stats:', err);
       setError('Failed to load stats');
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentYear, selectedWeek]);
 
   useEffect(() => {
     loadStats();
     
-    // Refresh every 2 minutes
-    const interval = setInterval(() => {
-      loadStats();
-    }, 120000);
+    // Only auto-refresh if viewing live (no week specified)
+    if (!selectedWeek) {
+      const interval = setInterval(() => {
+        loadStats();
+      }, 120000);
 
-    return () => clearInterval(interval);
-  }, []);
+      return () => clearInterval(interval);
+    }
+  }, [selectedWeek, loadStats]);
 
   const formatStatLine = (player: PlayerStats) => {
     const parts = [];
@@ -90,17 +104,49 @@ export default function ScoresPage() {
     <main className="flex min-h-screen flex-col p-6">
       <div className="flex h-20 shrink-0 items-end rounded-lg bg-blue-500 p-4 md:h-32">
         <div className="flex items-center justify-between w-full">
-          <h1 className={`${lusitana.className} text-white text-3xl md:text-4xl`}>
-            Live Player Stats
+          <h1 className={`${lusitana.className} text-white text-2xl md:text-4xl`}>
+            <span className="md:hidden">Live Stats</span>
+            <span className="hidden md:inline">Live Player Stats</span>
           </h1>
           <HomeButton />
         </div>
       </div>
 
-      <div className="mt-6 flex justify-between items-center">
-        <p className="text-sm text-gray-600">
-          Last updated: {lastUpdate.toLocaleTimeString()}
-        </p>
+      <div className="mt-6 flex justify-between items-center flex-wrap gap-4">
+        <div className="flex items-center gap-4">
+          {mounted && lastUpdate && (
+            <p className="text-sm text-gray-600">
+              Last updated: {lastUpdate.toLocaleTimeString()}
+            </p>
+          )}
+          {mounted && !lastUpdate && (
+            <p className="text-sm text-gray-600">
+              Loading...
+            </p>
+          )}
+          <div className="flex items-center gap-2">
+            <label htmlFor="week-select" className="text-sm text-gray-700 font-medium">
+              Week:
+            </label>
+            <select
+              id="week-select"
+              value={selectedWeek || 'live'}
+              onChange={(e) => {
+                const value = e.target.value;
+                setSelectedWeek(value === 'live' ? undefined : parseInt(value));
+                setLoading(true);
+              }}
+              className="rounded-md border border-gray-300 px-3 py-1 text-sm focus:border-blue-500 focus:outline-none"
+            >
+              <option value="live">Live</option>
+              {[...Array(18)].map((_, i) => (
+                <option key={i + 1} value={i + 1}>
+                  Week {i + 1}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
         <button
           onClick={loadStats}
           disabled={loading}
@@ -126,10 +172,10 @@ export default function ScoresPage() {
         </div>
       ) : (
         <div className="mt-6 overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 bg-white shadow-sm rounded-lg">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800 shadow-sm rounded-lg">
+            <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Player
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -142,18 +188,18 @@ export default function ScoresPage() {
                   Stats
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Fantasy Pts
+                  Actual
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
               {sortedStats.map((player) => (
                 <>
-                  <tr key={player.espnId} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <tr key={player.espnId} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => toggleRow(player.espnId)}
@@ -174,13 +220,13 @@ export default function ScoresPage() {
                         {player.playerName}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                       {player.team}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                       {player.position}
                     </td>
-                    <td className="hidden md:table-cell px-6 py-4 text-sm text-gray-500">
+                    <td className="hidden md:table-cell px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
                       {formatStatLine(player)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-blue-600">
@@ -199,9 +245,9 @@ export default function ScoresPage() {
                     </td>
                   </tr>
                   {expandedRows.has(player.espnId) && (
-                    <tr className="md:hidden bg-gray-50">
-                      <td colSpan={6} className="px-6 py-3 text-sm text-gray-700">
-                        <div className="font-medium text-gray-500 text-xs uppercase mb-1">Stats</div>
+                    <tr className="md:hidden bg-gray-50 dark:bg-gray-800">
+                      <td colSpan={5} className="px-6 py-3 text-sm text-gray-700 dark:text-gray-300">
+                        <div className="font-medium text-gray-500 dark:text-gray-400 text-xs uppercase mb-1">Stats</div>
                         {formatStatLine(player)}
                       </td>
                     </tr>

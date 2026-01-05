@@ -47,20 +47,20 @@ export default async function RosterPage({
 
       <div className="mt-6 flow-root">
         <div className="inline-block min-w-full align-middle">
-          <div className="rounded-lg bg-gray-50 p-2 md:pt-0">
-            <table className="hidden min-w-full text-gray-900 md:table">
+          <div className="rounded-lg bg-gray-50 dark:bg-gray-800 p-2 md:pt-0">
+            <table className="hidden min-w-full text-gray-900 dark:text-gray-100 md:table">
               <thead className="rounded-lg text-left text-sm font-normal">
                 <tr>
-                  <th scope="col" className="px-4 py-5 font-medium sm:pl-6">
+                  <th scope="col" className="px-4 py-5 font-medium sm:pl-6 dark:text-gray-300">
                     Player
                   </th>
-                  <th scope="col" className="px-3 py-5 font-medium">
+                  <th scope="col" className="px-3 py-5 font-medium dark:text-gray-300">
                     Position
                   </th>
-                  <th scope="col" className="px-3 py-5 font-medium">
+                  <th scope="col" className="px-3 py-5 font-medium dark:text-gray-300">
                     Team
                   </th>
-                  <th scope="col" className="px-3 py-5 font-medium text-center">
+                  <th scope="col" className="px-3 py-5 font-medium text-center dark:text-gray-300">
                     Week 1
                   </th>
                   <th scope="col" className="px-3 py-5 font-medium text-center">
@@ -77,7 +77,7 @@ export default async function RosterPage({
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white">
+              <tbody className="bg-white dark:bg-gray-900">
                 {rosterWithScores.map((entry) => (
                   <tr
                     key={entry.id}
@@ -127,40 +127,40 @@ export default async function RosterPage({
               {rosterWithScores.map((entry) => (
                 <div
                   key={entry.id}
-                  className="mb-2 w-full rounded-md bg-white p-4"
+                  className="mb-2 w-full rounded-md bg-white dark:bg-gray-700 p-4 border border-gray-200 dark:border-gray-600"
                 >
-                  <div className="mb-4 border-b pb-2">
-                    <p className="text-lg font-bold">{entry.playerName}</p>
-                    <p className="text-sm text-gray-500">
+                  <div className="mb-4 border-b dark:border-gray-600 pb-2">
+                    <p className="text-lg font-bold text-gray-900 dark:text-white">{entry.playerName}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-300">
                       {entry.position || 'N/A'} - {entry.team || 'N/A'}
                     </p>
                   </div>
                   <div className="grid grid-cols-4 gap-2 text-center mb-2">
                     <div>
-                      <p className="text-xs text-gray-500">Week 1</p>
-                      <p className="font-medium">{entry.weeklyScores[1] || 0}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Week 1</p>
+                      <p className="font-medium text-gray-900 dark:text-white">{entry.weeklyScores[1] || 0}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500">Week 2</p>
-                      <p className="font-medium">{entry.weeklyScores[2] || 0}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Week 2</p>
+                      <p className="font-medium text-gray-900 dark:text-white">{entry.weeklyScores[2] || 0}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500">Week 3</p>
-                      <p className="font-medium">{entry.weeklyScores[3] || 0}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Week 3</p>
+                      <p className="font-medium text-gray-900 dark:text-white">{entry.weeklyScores[3] || 0}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500">Week 4</p>
-                      <p className="font-medium">{entry.weeklyScores[4] || 0}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Week 4</p>
+                      <p className="font-medium text-gray-900 dark:text-white">{entry.weeklyScores[4] || 0}</p>
                     </div>
                   </div>
-                  <div className="border-t pt-2 text-right">
-                    <span className="text-sm text-gray-500">Total: </span>
-                    <span className="font-bold text-lg">{entry.totalPoints}</span>
+                  <div className="border-t dark:border-gray-600 pt-2 text-right">
+                    <span className="text-sm text-gray-500 dark:text-gray-400">Total: </span>
+                    <span className="font-bold text-lg text-gray-900 dark:text-white">{entry.totalPoints}</span>
                   </div>
                 </div>
               ))}
-              <div className="mt-4 rounded-md bg-gray-100 p-4 text-right">
-                <span className="text-lg font-bold">
+              <div className="mt-4 rounded-md bg-gray-100 dark:bg-gray-700 p-4 text-right border border-gray-200 dark:border-gray-600">
+                <span className="text-lg font-bold text-gray-900 dark:text-white">
                   Grand Total: {rosterWithScores.reduce((sum, entry) => sum + entry.totalPoints, 0)}
                 </span>
               </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { lusitana } from '@/app/ui/fonts';
@@ -19,19 +19,7 @@ export default function AddPlayerPage() {
   const [error, setError] = useState<string | null>(null);
   const [addingPlayerId, setAddingPlayerId] = useState<number | null>(null);
 
-  useEffect(() => {
-    loadPlayers();
-  }, []);
-
-  useEffect(() => {
-    const delayDebounce = setTimeout(() => {
-      loadPlayers();
-    }, 300); // Debounce search by 300ms
-
-    return () => clearTimeout(delayDebounce);
-  }, [searchQuery]);
-
-  async function loadPlayers() {
+  const loadPlayers = useCallback(async () => {
     setSearching(true);
     try {
       const data = await searchPlayers(searchQuery);
@@ -42,7 +30,11 @@ export default function AddPlayerPage() {
       setLoading(false);
       setSearching(false);
     }
-  }
+  }, [searchQuery]);
+
+  useEffect(() => {
+    loadPlayers();
+  }, [loadPlayers]);
 
   async function handleAddPlayer(playerId: number) {
     setAddingPlayerId(playerId);
@@ -132,6 +124,7 @@ export default function AddPlayerPage() {
                     )}
                   </div>
                   {player.imageUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={player.imageUrl}
                       alt={player.name}

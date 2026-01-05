@@ -1,37 +1,45 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { lusitana } from '@/app/ui/fonts';
 import HomeButton from '@/app/ui/home-button';
-import { createNewDraft, getCurrentDraft } from '@/app/lib/draft-actions';
+import { createNewDraft, getCurrentDraft, deleteDraft } from '@/app/lib/draft-actions';
 
 export default function AdminDraftPage() {
   const [draft, setDraft] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [totalRounds, setTotalRounds] = useState(10);
-  const currentYear = new Date().getFullYear();
+  const [showResetOptions, setShowResetOptions] = useState(false);
+  
+  // NFL season year logic: If we're in Jan-July, use previous year (season started previous September)
+  const now = new Date();
+  const currentYear = now.getMonth() < 8 ? now.getFullYear() - 1 : now.getFullYear();
 
-  useEffect(() => {
-    loadDraft();
-  }, []);
-
-  async function loadDraft() {
+  const loadDraft = useCallback(async () => {
     setLoading(true);
     try {
       const draftData = await getCurrentDraft(currentYear);
       setDraft(draftData);
+      if (draftData) {
+        setTotalRounds(draftData.totalRounds);
+      }
     } catch (err) {
       setError('Failed to load draft');
     } finally {
       setLoading(false);
     }
-  }
+  }, [currentYear]);
+
+  useEffect(() => {
+    loadDraft();
+  }, [loadDraft]);
 
   async function handleCreateDraft() {
-    if (draft && !confirm('This will clear all rosters and create a new draft. Continue?')) {
+    if (draft && !showResetOptions && !confirm('This will clear all rosters and create a new draft. Continue?')) {
       return;
     }
 
@@ -46,6 +54,26 @@ export default function AdminDraftPage() {
     } else {
       await loadDraft();
       setCreating(false);
+      setShowResetOptions(false);
+    }
+  }
+
+  async function handleDeleteDraft() {
+    if (!confirm('This will permanently delete the draft and clear all rosters. This cannot be undone. Continue?')) {
+      return;
+    }
+
+    setDeleting(true);
+    setError(null);
+
+    const result = await deleteDraft(currentYear);
+
+    if (result.error) {
+      setError(result.error);
+      setDeleting(false);
+    } else {
+      await loadDraft();
+      setDeleting(false);
     }
   }
 
@@ -61,8 +89,9 @@ export default function AdminDraftPage() {
     <main className="flex min-h-screen flex-col p-6">
       <div className="flex h-20 shrink-0 items-end rounded-lg bg-blue-500 p-4 md:h-32">
         <div className="flex items-center justify-between w-full">
-          <h1 className={`${lusitana.className} text-white text-3xl md:text-4xl`}>
-            Draft Administration
+          <h1 className={`${lusitana.className} text-white text-2xl md:text-4xl`}>
+            <span className="md:hidden">Draft Admin</span>
+            <span className="hidden md:inline">Draft Administration</span>
           </h1>
           <HomeButton />
         </div>
@@ -159,16 +188,69 @@ export default function AdminDraftPage() {
                 </div>
               </div>
 
-              <div className="flex gap-4">
-                <button
-                  onClick={handleCreateDraft}
-                  disabled={creating}
-                  className="rounded-lg bg-red-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {creating ? 'Resetting...' : 'Reset Draft (Clear Rosters)'}
-                </button>
+              <div className="flex gap-4 flex-wrap">
+                {!showResetOptions ? (
+                  <>
+                    <button
+                      onClick={() => setShowResetOptions(true)}
+                      disabled={creating || deleting}
+                      className="rounded-lg bg-orange-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Reset Draft
+                    </button>
+                    
+                    <button
+                      onClick={handleDeleteDraft}
+                      disabled={creating || deleting}
+                      className="rounded-lg bg-red-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {deleting ? 'Deleting...' : 'Delete Draft'}
+                    </button>
+                  </>
+                ) : (
+                  <div className="w-full">
+                    <div className="p-4 bg-orange-50 rounded-lg border border-orange-200 mb-4">
+                      <h3 className="font-semibold text-orange-900 mb-3">Reset Draft Options</h3>
+                      <p className="text-sm text-orange-800 mb-4">
+                        This will clear all picks and rosters. You can change the number of rounds.
+                      </p>
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Number of Draft Rounds
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="20"
+                          value={totalRounds}
+                          onChange={(e) => setTotalRounds(parseInt(e.target.value))}
+                          className="w-32 rounded-md border border-gray-300 px-3 py-2 text-sm"
+                        />
+                      </div>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={handleCreateDraft}
+                          disabled={creating}
+                          className="rounded-lg bg-orange-600 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {creating ? 'Resetting...' : 'Confirm Reset'}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowResetOptions(false);
+                            setTotalRounds(draft.totalRounds);
+                          }}
+                          disabled={creating}
+                          className="rounded-lg bg-gray-300 px-6 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
-                {!draft.isComplete && (
+                {!showResetOptions && !draft.isComplete && (
                   <Link
                     href="/draft"
                     className="rounded-lg bg-green-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-green-500"

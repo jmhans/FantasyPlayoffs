@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { lusitana } from '@/app/ui/fonts';
@@ -23,7 +23,10 @@ export default function DraftBoardPage() {
   const [picking, setPicking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
-  const currentYear = new Date().getFullYear();
+  
+  // Calculate NFL season year (Jan-Jul uses previous year)
+  const now = new Date();
+  const currentYear = now.getMonth() < 8 ? now.getFullYear() - 1 : now.getFullYear();
 
   const userIsAdmin = isAdmin(user);
 
@@ -36,52 +39,10 @@ export default function DraftBoardPage() {
     }
   }, [user, userIsAdmin]);
 
-  useEffect(() => {
-    loadDraftData();
-  }, []);
-
   // Track picks length to only re-filter when it actually changes
   const [lastPicksCount, setLastPicksCount] = useState(0);
-  const [lastSearchQuery, setLastSearchQuery] = useState('');
 
-  useEffect(() => {
-    // Only search if we have draft loaded
-    if (!draft) return;
-    
-    // Only search if we have picks loaded on first load
-    if (picks.length === 0 && lastPicksCount === 0) {
-      // First load after draft is fetched
-      loadPlayers();
-      setLastPicksCount(picks.length);
-      setLastSearchQuery(searchQuery);
-      return;
-    }
-
-    // Skip if nothing changed
-    if (picks.length === lastPicksCount && searchQuery === lastSearchQuery) {
-      return;
-    }
-    
-    const delayDebounce = setTimeout(() => {
-      loadPlayers();
-      setLastPicksCount(picks.length);
-      setLastSearchQuery(searchQuery);
-    }, 300);
-
-    return () => clearTimeout(delayDebounce);
-  }, [searchQuery, picks.length, draft]); // Depend on draft, search query, and picks length
-
-  useEffect(() => {
-    if (!autoRefresh) return;
-
-    const interval = setInterval(() => {
-      loadDraftData(true);
-    }, 3000); // Refresh every 3 seconds
-
-    return () => clearInterval(interval);
-  }, [autoRefresh]);
-
-  async function loadDraftData(silent = false) {
+  const loadDraftData = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     
     try {
@@ -108,10 +69,10 @@ export default function DraftBoardPage() {
     } finally {
       if (!silent) setLoading(false);
     }
-  }
+  }, [currentYear]);
 
-  async function loadPlayers(draftedPicks?: any[]) {
-    setSearching(true);
+  const loadPlayers = useCallback(async (draftedPicks?: any[], silent = false) => {
+    if (!silent) setSearching(true);
     try {
       const data = await searchPlayers(searchQuery);
       
@@ -126,9 +87,54 @@ export default function DraftBoardPage() {
     } catch (err) {
       console.error('Failed to load players:', err);
     } finally {
-      setSearching(false);
+      if (!silent) setSearching(false);
     }
-  }
+  }, [searchQuery, picks]);
+
+  useEffect(() => {
+    loadDraftData();
+  }, [loadDraftData]);
+
+  useEffect(() => {
+    // Only search if we have draft loaded
+    if (!draft) return;
+    
+    // Only search if we have picks loaded on first load
+    if (picks.length === 0 && lastPicksCount === 0) {
+      // First load after draft is fetched
+      loadPlayers(undefined, true); // Silent initial load
+      setLastPicksCount(picks.length);
+      return;
+    }
+
+    // Only reload if picks count actually changed (a new pick was made)
+    if (picks.length !== lastPicksCount) {
+      loadPlayers(undefined, true); // Silent reload when picks change
+      setLastPicksCount(picks.length);
+    }
+  }, [picks.length, draft, lastPicksCount, loadPlayers]);
+
+  // Separate effect for search query changes
+  useEffect(() => {
+    if (!draft) return;
+    if (searchQuery === '') return; // Don't search on empty query
+    
+    const delayDebounce = setTimeout(() => {
+      loadPlayers(undefined, false); // Show searching indicator for user searches
+    }, 300);
+
+    return () => clearTimeout(delayDebounce);
+  }, [searchQuery, draft, loadPlayers]);
+
+  useEffect(() => {
+    if (!autoRefresh) return;
+
+    const interval = setInterval(() => {
+      loadDraftData(true);
+    }, 3000); // Refresh every 3 seconds
+
+    return () => clearInterval(interval);
+  }, [autoRefresh, loadDraftData]);
 
   async function handleDraftPick(playerId: number) {
     if (!draft || !currentPicker) return;
@@ -158,7 +164,7 @@ export default function DraftBoardPage() {
     } else {
       const updatedPicks = await loadDraftData();
       if (updatedPicks) {
-        await loadPlayers(updatedPicks); // Pass fresh picks to filter immediately
+        await loadPlayers(updatedPicks, true); // Silent update, no searching indicator
       }
       setSearchQuery('');
       // Clear admin picker after successful pick
@@ -213,8 +219,9 @@ export default function DraftBoardPage() {
     <main className="flex min-h-screen flex-col p-6">
       <div className="flex h-20 shrink-0 items-end rounded-lg bg-blue-500 p-4 md:h-32">
         <div className="flex items-center justify-between w-full">
-          <h1 className={`${lusitana.className} text-white text-3xl md:text-4xl`}>
-            Draft Board - Round {Math.min(draft.currentRound, draft.totalRounds)}/{draft.totalRounds}
+          <h1 className={`${lusitana.className} text-white text-2xl md:text-4xl`}>
+            <span className="md:hidden">Draft - Rd {Math.min(draft.currentRound, draft.totalRounds)}</span>
+            <span className="hidden md:inline">Draft Board - Round {Math.min(draft.currentRound, draft.totalRounds)}/{draft.totalRounds}</span>
           </h1>
           <HomeButton />
         </div>
@@ -230,18 +237,18 @@ export default function DraftBoardPage() {
         {/* Left Column - Draft Status & Order */}
         <div className="lg:col-span-1 space-y-6">
           {/* Current Pick Status */}
-          <div className="rounded-lg bg-white p-6 shadow-sm border border-gray-200">
-            <h2 className="text-lg font-semibold mb-4">Current Pick</h2>
+          <div className="rounded-lg bg-white dark:bg-gray-800 p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+            <h2 className="text-lg font-semibold dark:text-white mb-4">Current Pick</h2>
             {draft.isComplete ? (
               <div className="text-center py-4">
                 <p className="text-2xl font-bold text-green-600">Draft Complete!</p>
               </div>
             ) : (
               <div>
-                <div className={`p-4 rounded-lg ${isMyTurn ? 'bg-green-50 border-2 border-green-500' : 'bg-gray-50'}`}>
-                  <p className="text-sm text-gray-600 mb-1">Now Picking:</p>
-                  <p className="text-xl font-bold">{currentPicker?.participantName || 'Loading...'}</p>
-                  <p className="text-sm text-gray-500 mt-2">
+                <div className={`p-4 rounded-lg ${isMyTurn ? 'bg-green-50 dark:bg-green-900 border-2 border-green-500' : 'bg-gray-50 dark:bg-gray-700'}`}>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">Now Picking:</p>
+                  <p className="text-xl font-bold dark:text-white">{currentPicker?.participantName || 'Loading...'}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
                     Pick {draft.currentPick} of {draft.draftOrder?.length || 0}
                   </p>
                   {isMyTurn && (
@@ -286,7 +293,7 @@ export default function DraftBoardPage() {
                     onChange={(e) => setAutoRefresh(e.target.checked)}
                     className="rounded"
                   />
-                  <label htmlFor="autoRefresh" className="text-sm text-gray-600">
+                  <label htmlFor="autoRefresh" className="text-sm text-gray-600 dark:text-gray-300">
                     Auto-refresh every 3s
                   </label>
                 </div>
@@ -295,8 +302,8 @@ export default function DraftBoardPage() {
           </div>
 
           {/* Draft Order */}
-          <div className="rounded-lg bg-white p-6 shadow-sm border border-gray-200">
-            <h2 className="text-lg font-semibold mb-4">Draft Order</h2>
+          <div className="rounded-lg bg-white dark:bg-gray-800 p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+            <h2 className="text-lg font-semibold dark:text-white mb-4">Draft Order</h2>
             <div className="space-y-2">
               {draft.draftOrder?.map((entry: any, index: number) => {
                 const isCurrentPicker = currentPicker?.participantId === entry.participantId;
@@ -309,8 +316,8 @@ export default function DraftBoardPage() {
                       isSelected 
                         ? 'bg-blue-500 text-white font-semibold' 
                         : isCurrentPicker 
-                        ? 'bg-green-100 font-semibold hover:bg-green-200' 
-                        : 'bg-gray-50 hover:bg-gray-100'
+                        ? 'bg-green-100 dark:bg-green-900 font-semibold hover:bg-green-200 dark:hover:bg-green-800 dark:text-white' 
+                        : 'bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-white'
                     }`}
                   >
                     <span className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
@@ -336,8 +343,8 @@ export default function DraftBoardPage() {
 
         {/* Middle Column - Available Players */}
         <div className="lg:col-span-1">
-          <div className="rounded-lg bg-white p-6 shadow-sm border border-gray-200 sticky top-6">
-            <h2 className="text-lg font-semibold mb-4">Available Players</h2>
+          <div className="rounded-lg bg-white dark:bg-gray-800 p-6 shadow-sm border border-gray-200 dark:border-gray-700 sticky top-6">
+            <h2 className="text-lg font-semibold dark:text-white mb-4">Available Players</h2>
             
             <div className="mb-4">
               <input
@@ -354,27 +361,33 @@ export default function DraftBoardPage() {
 
             <div className="max-h-[600px] overflow-y-auto space-y-2">
               {players.length === 0 ? (
-                <p className="text-sm text-gray-500 text-center py-4">
+                <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
                   {searchQuery ? 'No players found' : 'Search for players'}
                 </p>
               ) : (
                 players.map((player) => (
                   <div
                     key={player.id}
-                    className="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition"
+                    className="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 hover:border-blue-300 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900 transition"
                   >
                     <div className="flex items-center gap-3 flex-1">
                       {player.imageUrl && (
+                        // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={player.imageUrl}
                           alt={player.name}
                           className="w-10 h-10 rounded-full object-cover"
                         />
                       )}
-                      <div>
-                        <p className="font-medium text-sm">{player.name}</p>
-                        <p className="text-xs text-gray-600">
+                      <div className="flex-1">
+                        <p className="font-medium text-sm dark:text-white">{player.name}</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-300">
                           {player.position} - {player.team}
+                          {player.avgPoints > 0 && (
+                            <span className="ml-2 font-semibold text-blue-600">
+                              {player.avgPoints.toFixed(1)} PPG
+                            </span>
+                          )}
                         </p>
                       </div>
                     </div>
@@ -406,8 +419,8 @@ export default function DraftBoardPage() {
 
         {/* Right Column - Draft Picks */}
         <div className="lg:col-span-1">
-          <div className="rounded-lg bg-white p-6 shadow-sm border border-gray-200">
-            <h2 className="text-lg font-semibold mb-4">
+          <div className="rounded-lg bg-white dark:bg-gray-800 p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+            <h2 className="text-lg font-semibold dark:text-white mb-4">
               {selectedParticipant 
                 ? `${selectedParticipant.participantName}'s Team (${displayedPicks.length})` 
                 : `Draft Picks (${picks.length})`}

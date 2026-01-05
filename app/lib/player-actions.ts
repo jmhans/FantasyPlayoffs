@@ -1,8 +1,8 @@
 'use server';
 
 import { db } from '@/app/lib/db';
-import { players } from '@/app/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { players, weeklyActuals } from '@/app/lib/db/schema';
+import { eq, sql } from 'drizzle-orm';
 import { fetchNFLPlayers, type ESPNPlayer } from '@/app/lib/espn-api';
 import { revalidatePath } from 'next/cache';
 
@@ -57,24 +57,63 @@ export async function syncPlayersFromESPN() {
   }
 }
 
-export async function searchPlayers(query: string) {
+export async function searchPlayers(query: string, season: number = 2025) {
   try {
     if (!query || query.trim() === '') {
-      // If no query, return first 100 players
-      return await db.select().from(players).limit(100);
+      // If no query, return first 100 eligible players with their average points
+      const result = await db
+        .select({
+          id: players.id,
+          espnId: players.espnId,
+          name: players.name,
+          position: players.position,
+          team: players.team,
+          jerseyNumber: players.jerseyNumber,
+          status: players.status,
+          imageUrl: players.imageUrl,
+          metadata: players.metadata,
+          isDraftEligible: players.isDraftEligible,
+          avgPoints: sql<number>`COALESCE(AVG(${weeklyActuals.fantasyPoints}), 0)`.as('avg_points'),
+          gamesPlayed: sql<number>`COUNT(${weeklyActuals.id})`.as('games_played'),
+        })
+        .from(players)
+        .leftJoin(weeklyActuals, sql`${weeklyActuals.playerId} = ${players.id} AND ${weeklyActuals.season} = ${season}`)
+        .where(eq(players.isDraftEligible, true))
+        .groupBy(players.id)
+        .orderBy(sql`COALESCE(AVG(${weeklyActuals.fantasyPoints}), 0) DESC`)
+        .limit(100);
+      
+      return result;
     }
     
     const searchTerm = `%${query.toLowerCase()}%`;
     const { sql: rawSql, ilike } = await import('drizzle-orm');
     
     const result = await db
-      .select()
+      .select({
+        id: players.id,
+        espnId: players.espnId,
+        name: players.name,
+        position: players.position,
+        team: players.team,
+        jerseyNumber: players.jerseyNumber,
+        status: players.status,
+        imageUrl: players.imageUrl,
+        metadata: players.metadata,
+        isDraftEligible: players.isDraftEligible,
+        avgPoints: sql<number>`COALESCE(AVG(${weeklyActuals.fantasyPoints}), 0)`.as('avg_points'),
+        gamesPlayed: sql<number>`COUNT(${weeklyActuals.id})`.as('games_played'),
+      })
       .from(players)
+      .leftJoin(weeklyActuals, sql`${weeklyActuals.playerId} = ${players.id} AND ${weeklyActuals.season} = ${season}`)
       .where(
-        rawSql`LOWER(${players.name}) LIKE ${searchTerm} 
+        rawSql`(LOWER(${players.name}) LIKE ${searchTerm} 
           OR LOWER(${players.team}) LIKE ${searchTerm}
-          OR LOWER(${players.position}) LIKE ${searchTerm}`
+          OR LOWER(${players.position}) LIKE ${searchTerm})
+          AND ${players.isDraftEligible} = true`
       )
+      .groupBy(players.id)
+      .orderBy(sql`COALESCE(AVG(${weeklyActuals.fantasyPoints}), 0) DESC`)
       .limit(100);
     
     return result;

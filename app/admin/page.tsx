@@ -42,8 +42,9 @@ export default function AdminPage() {
     <main className="flex min-h-screen flex-col p-6">
       <div className="flex h-20 shrink-0 items-end rounded-lg bg-blue-500 p-4 md:h-32">
         <div className="flex items-center justify-between w-full">
-          <h1 className={`${lusitana.className} text-white text-3xl md:text-4xl`}>
-            Admin Dashboard
+          <h1 className={`${lusitana.className} text-white text-2xl md:text-4xl`}>
+            <span className="md:hidden">Admin</span>
+            <span className="hidden md:inline">Admin Dashboard</span>
           </h1>
           <HomeButton />
         </div>
@@ -94,6 +95,116 @@ export default function AdminPage() {
           </div>
         </Link>
 
+        {/* Sync Projections Card */}
+        <Link
+          href="/admin/sync-projections"
+          className="group rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition-all hover:border-blue-500 hover:shadow-md"
+        >
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-purple-100 text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors">
+              <svg className="h-6 w-6" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 group-hover:text-purple-600">
+                Sync Projections
+              </h2>
+              <p className="text-sm text-gray-500">
+                Single week sync
+              </p>
+            </div>
+          </div>
+        </Link>
+
+        {/* Sync Projections Multi Card */}
+        <Link
+          href="/admin/sync-projections-multi"
+          className="group rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition-all hover:border-blue-500 hover:shadow-md"
+        >
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-purple-100 text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors">
+              <svg className="h-6 w-6" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                <path d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path>
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 group-hover:text-purple-600">
+                Sync Multiple Weeks
+              </h2>
+              <p className="text-sm text-gray-500">
+                Batch sync projections
+              </p>
+            </div>
+          </div>
+        </Link>
+
+        {/* Sync Weekly Actuals Card */}
+        <Link
+          href="/admin/sync-actuals"
+          className="group rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition-all hover:border-blue-500 hover:shadow-md"
+        >
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-100 text-green-600 group-hover:bg-green-600 group-hover:text-white transition-colors">
+              <svg className="h-6 w-6" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 group-hover:text-green-600">
+                Sync Weekly Actuals
+              </h2>
+              <p className="text-sm text-gray-500">
+                Historical stats (weeks 1-17)
+              </p>
+            </div>
+          </div>
+        </Link>
+
+        {/* Calculate Roster Scores Card */}
+        <Link
+          href="/admin/calculate-scores"
+          className="group rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition-all hover:border-blue-500 hover:shadow-md"
+        >
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-orange-100 text-orange-600 group-hover:bg-orange-600 group-hover:text-white transition-colors">
+              <svg className="h-6 w-6" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                <path d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 group-hover:text-orange-600">
+                Calculate Roster Scores
+              </h2>
+              <p className="text-sm text-gray-500">
+                Calculate fantasy points from actuals
+              </p>
+            </div>
+          </div>
+        </Link>
+
+        {/* Draft Eligibility Card */}
+        <Link
+          href="/admin/eligibility"
+          className="group rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition-all hover:border-blue-500 hover:shadow-md"
+        >
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+              <svg className="h-6 w-6" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 group-hover:text-indigo-600">
+                Draft Eligibility
+              </h2>
+              <p className="text-sm text-gray-500">
+                Manage playoff team eligibility
+              </p>
+            </div>
+          </div>
+        </Link>
+
         {/* Future Admin Features */}
         <div className="rounded-lg border border-gray-200 bg-gray-50 p-6 shadow-sm opacity-60">
           <div className="flex items-center gap-4">
@@ -118,6 +229,7 @@ export default function AdminPage() {
         <h3 className="text-lg font-semibold text-gray-900 mb-2">Quick Tips</h3>
         <ul className="list-disc list-inside space-y-1 text-sm text-gray-700">
           <li>Sync players before creating a new draft to get the latest NFL roster</li>
+          <li>Sync projections weekly to update projected fantasy points from Sleeper</li>
           <li>Draft management allows you to create drafts and reset if needed</li>
           <li>Only users with admin role can access these features</li>
         </ul>

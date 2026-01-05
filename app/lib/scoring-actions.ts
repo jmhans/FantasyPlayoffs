@@ -1,7 +1,7 @@
 'use server';
 
 import { db } from '@/app/lib/db';
-import { players, rosterEntries, seasons } from '@/app/lib/db/schema';
+import { players, rosterEntries, seasons, weeklyActuals } from '@/app/lib/db/schema';
 import { eq, inArray, and } from 'drizzle-orm';
 
 interface PlayerStats {
@@ -19,6 +19,7 @@ interface PlayerStats {
   receivingYards: number;
   receivingTouchdowns: number;
   fantasyPoints: number;
+  projectedPoints: number | null;
   gameStatus: 'pre' | 'in' | 'post';
   lastUpdated: Date;
 }
@@ -52,6 +53,7 @@ async function getActiveRosterPlayers(seasonYear: number) {
         position: rosterEntries.position,
         team: rosterEntries.team,
         espnId: players.espnId,
+        projectedPoints: players.projectedPoints,
       })
       .from(rosterEntries)
       .innerJoin(players, eq(rosterEntries.playerId, players.id))
@@ -201,9 +203,43 @@ function calculateFantasyPoints(stats: {
 }
 
 /**
- * Main function to fetch live stats for all rostered players
+ * Get player stats from weeklyActuals table for a specific week
+ * Joins with players table to get full player info
  */
-export async function getLivePlayerStats(seasonYear: number): Promise<PlayerStats[]> {
+async function getStoredWeeklyActuals(seasonYear: number, week: number) {
+  try {
+    const actuals = await db
+      .select({
+        playerId: weeklyActuals.playerId,
+        espnId: weeklyActuals.espnId,
+        fantasyPoints: weeklyActuals.fantasyPoints,
+        stats: weeklyActuals.stats,
+        playerName: players.name,
+        position: players.position,
+        team: players.team,
+      })
+      .from(weeklyActuals)
+      .innerJoin(players, eq(weeklyActuals.playerId, players.id))
+      .where(
+        and(
+          eq(weeklyActuals.season, seasonYear),
+          eq(weeklyActuals.week, week)
+        )
+      );
+
+    console.log(`[getStoredWeeklyActuals] Found ${actuals.length} actuals for ${seasonYear} week ${week}`);
+    return actuals;
+  } catch (error) {
+    console.error('Error fetching stored actuals:', error);
+    return [];
+  }
+}
+
+/**
+ * Main function to fetch live stats for all rostered players
+ * Can fetch from live ESPN API or from stored weeklyActuals
+ */
+export async function getLivePlayerStats(seasonYear: number, week?: number): Promise<PlayerStats[]> {
   try {
     // Get all players on rosters
     const rosterPlayers = await getActiveRosterPlayers(seasonYear);
@@ -212,8 +248,57 @@ export async function getLivePlayerStats(seasonYear: number): Promise<PlayerStat
       return [];
     }
 
-    // Get current week's games
-    const { week, games } = await getCurrentWeekGames();
+    // If week is specified, try to get data from weeklyActuals first
+    if (week) {
+      const storedActuals = await getStoredWeeklyActuals(seasonYear, week);
+      
+      console.log(`[getLivePlayerStats] Week ${week} requested, found ${storedActuals.length} stored actuals`);
+      console.log(`[getLivePlayerStats] Found ${rosterPlayers.length} roster players`);
+      
+      if (storedActuals.length > 0) {
+        // Map stored actuals to player stats - only include rostered players
+        const playerStatsMap = new Map<string, PlayerStats>();
+        
+        for (const actual of storedActuals) {
+          const rosterPlayer = rosterPlayers.find(p => p.espnId === actual.espnId);
+          if (!rosterPlayer) {
+            console.log(`[getLivePlayerStats] Skipping ${actual.playerName} (${actual.espnId}) - not on roster`);
+            continue;
+          }
+          
+          const stats = actual.stats as any || {};
+          
+          playerStatsMap.set(actual.espnId, {
+            playerId: actual.playerId,
+            playerName: actual.playerName,
+            espnId: actual.espnId,
+            team: actual.team || '',
+            position: actual.position || '',
+            passingYards: stats.passingYards || 0,
+            passingTouchdowns: stats.passingTouchdowns || 0,
+            interceptions: stats.interceptions || 0,
+            rushingYards: stats.rushingYards || 0,
+            rushingTouchdowns: stats.rushingTouchdowns || 0,
+            receptions: stats.receptions || 0,
+            receivingYards: stats.receivingYards || 0,
+            receivingTouchdowns: stats.receivingTouchdowns || 0,
+            fantasyPoints: Number(actual.fantasyPoints),
+            projectedPoints: rosterPlayer.projectedPoints || null,
+            gameStatus: 'post',
+            lastUpdated: new Date(),
+          });
+        }
+        
+        console.log(`[getLivePlayerStats] Returning ${playerStatsMap.size} player stats`);
+        return Array.from(playerStatsMap.values());
+      }
+    }
+
+    // Get current week's games from ESPN live API
+    const { week: currentWeek, games } = await getCurrentWeekGames();
+    
+    console.log(`[getLivePlayerStats] Live mode: found ${games.length} games for week ${currentWeek}`);
+    console.log(`[getLivePlayerStats] Checking ${rosterPlayers.length} roster players`);
     
     // Map to store accumulated stats by ESPN player ID
     const playerStatsMap = new Map<string, PlayerStats>();
@@ -221,6 +306,8 @@ export async function getLivePlayerStats(seasonYear: number): Promise<PlayerStat
     // Fetch stats from all games
     for (const game of games) {
       const gameStats = await getGamePlayerStats(game.id);
+      console.log(`[getLivePlayerStats] Game ${game.id}: found stats for ${gameStats.size} players`);
+      
       const gameStatus = game.status.type.state;
       
       // Process each rostered player
@@ -229,6 +316,8 @@ export async function getLivePlayerStats(seasonYear: number): Promise<PlayerStat
         
         const espnStats = gameStats.get(rosterPlayer.espnId);
         if (!espnStats) continue;
+        
+        console.log(`[getLivePlayerStats] Matched: ${rosterPlayer.playerName} (${rosterPlayer.espnId})`);
         
         // Initialize or get existing stats
         let playerStats = playerStatsMap.get(rosterPlayer.espnId);
@@ -248,6 +337,7 @@ export async function getLivePlayerStats(seasonYear: number): Promise<PlayerStat
             receivingYards: espnStats.receivingYards || 0,
             receivingTouchdowns: espnStats.receivingTouchdowns || 0,
             fantasyPoints: 0,
+            projectedPoints: rosterPlayer.projectedPoints || null,
             gameStatus,
             lastUpdated: new Date(),
           };
@@ -278,7 +368,7 @@ export async function getPlayerStats(espnId: string, week?: number): Promise<Pla
       const espnStats = gameStats.get(espnId);
       
       if (espnStats) {
-        const fullStats = {
+        const fullStats: PlayerStats = {
           playerId: 0, // Will be filled from DB if needed
           playerName: espnStats.playerName || '',
           espnId,
@@ -293,6 +383,7 @@ export async function getPlayerStats(espnId: string, week?: number): Promise<Pla
           receivingYards: espnStats.receivingYards || 0,
           receivingTouchdowns: espnStats.receivingTouchdowns || 0,
           fantasyPoints: 0,
+          projectedPoints: null,
           gameStatus: game.status.type.state,
           lastUpdated: new Date(),
         };
