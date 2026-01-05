@@ -172,10 +172,10 @@ export default function ScoresPage() {
         </div>
       ) : (
         <div className="mt-6 overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 bg-white shadow-sm rounded-lg">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800 shadow-sm rounded-lg">
+            <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Player
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -195,11 +195,11 @@ export default function ScoresPage() {
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
               {sortedStats.map((player) => (
                 <>
-                  <tr key={player.espnId} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <tr key={player.espnId} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => toggleRow(player.espnId)}
@@ -220,13 +220,13 @@ export default function ScoresPage() {
                         {player.playerName}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                       {player.team}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                       {player.position}
                     </td>
-                    <td className="hidden md:table-cell px-6 py-4 text-sm text-gray-500">
+                    <td className="hidden md:table-cell px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
                       {formatStatLine(player)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-blue-600">
@@ -245,9 +245,9 @@ export default function ScoresPage() {
                     </td>
                   </tr>
                   {expandedRows.has(player.espnId) && (
-                    <tr className="md:hidden bg-gray-50">
-                      <td colSpan={5} className="px-6 py-3 text-sm text-gray-700">
-                        <div className="font-medium text-gray-500 text-xs uppercase mb-1">Stats</div>
+                    <tr className="md:hidden bg-gray-50 dark:bg-gray-800">
+                      <td colSpan={5} className="px-6 py-3 text-sm text-gray-700 dark:text-gray-300">
+                        <div className="font-medium text-gray-500 dark:text-gray-400 text-xs uppercase mb-1">Stats</div>
                         {formatStatLine(player)}
                       </td>
                     </tr>

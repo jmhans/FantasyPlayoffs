@@ -110,8 +110,8 @@ export default function CalculateScoresPage() {
         </div>
 
         {message && (
-          <div className="mt-6 rounded-md bg-white p-4 border border-gray-200">
-            <pre className="text-sm whitespace-pre-wrap">{message}</pre>
+          <div className="mt-6 rounded-md bg-white dark:bg-gray-700 p-4 border border-gray-200 dark:border-gray-600">
+            <pre className="text-sm whitespace-pre-wrap text-gray-900 dark:text-white">{message}</pre>
           </div>
         )}
 

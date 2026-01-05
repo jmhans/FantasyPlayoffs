@@ -204,7 +204,7 @@ export default function Home() {
                     <td className="whitespace-nowrap px-3 py-3">
                       {participant.participantName}
                       {!participant.auth0Id && (
-                        <span className="ml-2 inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800">
+                        <span className="ml-2 inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-600 px-2 py-0.5 text-xs font-medium text-gray-800 dark:text-gray-200">
                           Unclaimed
                         </span>
                       )}
@@ -216,7 +216,7 @@ export default function Home() {
                       <div className="flex justify-end gap-3">
                         <Link
                           href={`/roster/${participant.participantId}`}
-                          className="rounded-md border p-2 hover:bg-gray-100"
+                          className="rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 p-2 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600"
                         >
                           View Roster
                         </Link>

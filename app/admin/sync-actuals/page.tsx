@@ -44,10 +44,10 @@ export default function SyncActualsPage() {
       
       <h1 className="text-3xl font-bold mb-6">Sync Weekly Actuals</h1>
       
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Season
             </label>
             <input
@@ -60,7 +60,7 @@ export default function SyncActualsPage() {
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Start Week
             </label>
             <input
@@ -75,7 +75,7 @@ export default function SyncActualsPage() {
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               End Week
             </label>
             <input
@@ -99,8 +99,8 @@ export default function SyncActualsPage() {
         </button>
         
         {message && (
-          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-            <pre className="text-sm whitespace-pre-wrap">{message}</pre>
+          <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <pre className="text-sm whitespace-pre-wrap dark:text-white">{message}</pre>
           </div>
         )}
       </div>

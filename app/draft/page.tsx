@@ -237,18 +237,18 @@ export default function DraftBoardPage() {
         {/* Left Column - Draft Status & Order */}
         <div className="lg:col-span-1 space-y-6">
           {/* Current Pick Status */}
-          <div className="rounded-lg bg-white p-6 shadow-sm border border-gray-200">
-            <h2 className="text-lg font-semibold mb-4">Current Pick</h2>
+          <div className="rounded-lg bg-white dark:bg-gray-800 p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+            <h2 className="text-lg font-semibold dark:text-white mb-4">Current Pick</h2>
             {draft.isComplete ? (
               <div className="text-center py-4">
                 <p className="text-2xl font-bold text-green-600">Draft Complete!</p>
               </div>
             ) : (
               <div>
-                <div className={`p-4 rounded-lg ${isMyTurn ? 'bg-green-50 border-2 border-green-500' : 'bg-gray-50'}`}>
-                  <p className="text-sm text-gray-600 mb-1">Now Picking:</p>
-                  <p className="text-xl font-bold">{currentPicker?.participantName || 'Loading...'}</p>
-                  <p className="text-sm text-gray-500 mt-2">
+                <div className={`p-4 rounded-lg ${isMyTurn ? 'bg-green-50 dark:bg-green-900 border-2 border-green-500' : 'bg-gray-50 dark:bg-gray-700'}`}>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">Now Picking:</p>
+                  <p className="text-xl font-bold dark:text-white">{currentPicker?.participantName || 'Loading...'}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
                     Pick {draft.currentPick} of {draft.draftOrder?.length || 0}
                   </p>
                   {isMyTurn && (
@@ -293,7 +293,7 @@ export default function DraftBoardPage() {
                     onChange={(e) => setAutoRefresh(e.target.checked)}
                     className="rounded"
                   />
-                  <label htmlFor="autoRefresh" className="text-sm text-gray-600">
+                  <label htmlFor="autoRefresh" className="text-sm text-gray-600 dark:text-gray-300">
                     Auto-refresh every 3s
                   </label>
                 </div>
@@ -302,8 +302,8 @@ export default function DraftBoardPage() {
           </div>
 
           {/* Draft Order */}
-          <div className="rounded-lg bg-white p-6 shadow-sm border border-gray-200">
-            <h2 className="text-lg font-semibold mb-4">Draft Order</h2>
+          <div className="rounded-lg bg-white dark:bg-gray-800 p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+            <h2 className="text-lg font-semibold dark:text-white mb-4">Draft Order</h2>
             <div className="space-y-2">
               {draft.draftOrder?.map((entry: any, index: number) => {
                 const isCurrentPicker = currentPicker?.participantId === entry.participantId;
@@ -316,8 +316,8 @@ export default function DraftBoardPage() {
                       isSelected 
                         ? 'bg-blue-500 text-white font-semibold' 
                         : isCurrentPicker 
-                        ? 'bg-green-100 font-semibold hover:bg-green-200' 
-                        : 'bg-gray-50 hover:bg-gray-100'
+                        ? 'bg-green-100 dark:bg-green-900 font-semibold hover:bg-green-200 dark:hover:bg-green-800 dark:text-white' 
+                        : 'bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-white'
                     }`}
                   >
                     <span className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
@@ -343,8 +343,8 @@ export default function DraftBoardPage() {
 
         {/* Middle Column - Available Players */}
         <div className="lg:col-span-1">
-          <div className="rounded-lg bg-white p-6 shadow-sm border border-gray-200 sticky top-6">
-            <h2 className="text-lg font-semibold mb-4">Available Players</h2>
+          <div className="rounded-lg bg-white dark:bg-gray-800 p-6 shadow-sm border border-gray-200 dark:border-gray-700 sticky top-6">
+            <h2 className="text-lg font-semibold dark:text-white mb-4">Available Players</h2>
             
             <div className="mb-4">
               <input
@@ -361,14 +361,14 @@ export default function DraftBoardPage() {
 
             <div className="max-h-[600px] overflow-y-auto space-y-2">
               {players.length === 0 ? (
-                <p className="text-sm text-gray-500 text-center py-4">
+                <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
                   {searchQuery ? 'No players found' : 'Search for players'}
                 </p>
               ) : (
                 players.map((player) => (
                   <div
                     key={player.id}
-                    className="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition"
+                    className="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 hover:border-blue-300 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900 transition"
                   >
                     <div className="flex items-center gap-3 flex-1">
                       {player.imageUrl && (
@@ -380,8 +380,8 @@ export default function DraftBoardPage() {
                         />
                       )}
                       <div className="flex-1">
-                        <p className="font-medium text-sm">{player.name}</p>
-                        <p className="text-xs text-gray-600">
+                        <p className="font-medium text-sm dark:text-white">{player.name}</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-300">
                           {player.position} - {player.team}
                           {player.avgPoints > 0 && (
                             <span className="ml-2 font-semibold text-blue-600">
@@ -419,8 +419,8 @@ export default function DraftBoardPage() {
 
         {/* Right Column - Draft Picks */}
         <div className="lg:col-span-1">
-          <div className="rounded-lg bg-white p-6 shadow-sm border border-gray-200">
-            <h2 className="text-lg font-semibold mb-4">
+          <div className="rounded-lg bg-white dark:bg-gray-800 p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+            <h2 className="text-lg font-semibold dark:text-white mb-4">
               {selectedParticipant 
                 ? `${selectedParticipant.participantName}'s Team (${displayedPicks.length})` 
                 : `Draft Picks (${picks.length})`}

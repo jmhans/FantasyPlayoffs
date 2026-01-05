@@ -40,13 +40,13 @@ async function runMigrations() {
   console.log('🚀 Production Database Migration');
   console.log('================================');
   console.log('');
-  console.log('Target:', PROD_DATABASE_URL.replace(/:[^:@]+@/, ':****@')); // Mask password
+  console.log('Target:', PROD_DATABASE_URL!.replace(/:[^:@]+@/, ':****@')); // Mask password
   console.log('Migration folder: ./drizzle');
   console.log('');
 
   try {
     // Create database connection
-    const sql = neon(PROD_DATABASE_URL);
+    const sql = neon(PROD_DATABASE_URL!);
     const db = drizzle(sql);
 
     console.log('📦 Applying migrations...');
