@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { lusitana } from '@/app/ui/fonts';
 import HomeButton from '@/app/ui/home-button';
-import { syncProjectionsFromSleeper, getCurrentNFLWeek } from '@/app/lib/projections-actions';
+import { syncProjectionsFromSleeper } from '@/app/lib/projections-actions';
 
 export default function SyncProjectionsPage() {
   const router = useRouter();
@@ -12,7 +12,16 @@ export default function SyncProjectionsPage() {
   const [result, setResult] = useState<{ success?: boolean; updated?: number; skipped?: number; error?: string } | null>(null);
   const currentYear = new Date().getFullYear();
   const [season, setSeason] = useState(currentYear);
-  const [week, setWeek] = useState(getCurrentNFLWeek());
+  
+  // Calculate current week client-side instead of calling server function
+  const getCurrentWeek = () => {
+    const now = new Date();
+    const seasonStart = new Date(now.getFullYear(), 8, 1); // September 1st
+    const weeksSinceStart = Math.floor((now.getTime() - seasonStart.getTime()) / (7 * 24 * 60 * 60 * 1000));
+    return Math.max(1, Math.min(18, weeksSinceStart + 1));
+  };
+  
+  const [week, setWeek] = useState(getCurrentWeek());
 
   async function handleSync() {
     setSyncing(true);

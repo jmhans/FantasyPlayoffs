@@ -1,0 +1,1 @@
+ALTER TABLE "fantasy_playoffs"."weekly_actuals" ALTER COLUMN "fantasy_points" SET DATA TYPE real;

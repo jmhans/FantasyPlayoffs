@@ -23,7 +23,10 @@ export default function DraftBoardPage() {
   const [picking, setPicking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
-  const currentYear = new Date().getFullYear();
+  
+  // Calculate NFL season year (Jan-Jul uses previous year)
+  const now = new Date();
+  const currentYear = now.getMonth() < 8 ? now.getFullYear() - 1 : now.getFullYear();
 
   const userIsAdmin = isAdmin(user);
 
@@ -42,7 +45,6 @@ export default function DraftBoardPage() {
 
   // Track picks length to only re-filter when it actually changes
   const [lastPicksCount, setLastPicksCount] = useState(0);
-  const [lastSearchQuery, setLastSearchQuery] = useState('');
 
   useEffect(() => {
     // Only search if we have draft loaded
@@ -51,25 +53,29 @@ export default function DraftBoardPage() {
     // Only search if we have picks loaded on first load
     if (picks.length === 0 && lastPicksCount === 0) {
       // First load after draft is fetched
-      loadPlayers();
+      loadPlayers(undefined, true); // Silent initial load
       setLastPicksCount(picks.length);
-      setLastSearchQuery(searchQuery);
       return;
     }
 
-    // Skip if nothing changed
-    if (picks.length === lastPicksCount && searchQuery === lastSearchQuery) {
-      return;
+    // Only reload if picks count actually changed (a new pick was made)
+    if (picks.length !== lastPicksCount) {
+      loadPlayers(undefined, true); // Silent reload when picks change
+      setLastPicksCount(picks.length);
     }
+  }, [picks.length, draft]);
+
+  // Separate effect for search query changes
+  useEffect(() => {
+    if (!draft) return;
+    if (searchQuery === '') return; // Don't search on empty query
     
     const delayDebounce = setTimeout(() => {
-      loadPlayers();
-      setLastPicksCount(picks.length);
-      setLastSearchQuery(searchQuery);
+      loadPlayers(undefined, false); // Show searching indicator for user searches
     }, 300);
 
     return () => clearTimeout(delayDebounce);
-  }, [searchQuery, picks.length, draft]); // Depend on draft, search query, and picks length
+  }, [searchQuery, draft]);
 
   useEffect(() => {
     if (!autoRefresh) return;
@@ -110,8 +116,8 @@ export default function DraftBoardPage() {
     }
   }
 
-  async function loadPlayers(draftedPicks?: any[]) {
-    setSearching(true);
+  async function loadPlayers(draftedPicks?: any[], silent = false) {
+    if (!silent) setSearching(true);
     try {
       const data = await searchPlayers(searchQuery);
       
@@ -126,7 +132,7 @@ export default function DraftBoardPage() {
     } catch (err) {
       console.error('Failed to load players:', err);
     } finally {
-      setSearching(false);
+      if (!silent) setSearching(false);
     }
   }
 
@@ -158,7 +164,7 @@ export default function DraftBoardPage() {
     } else {
       const updatedPicks = await loadDraftData();
       if (updatedPicks) {
-        await loadPlayers(updatedPicks); // Pass fresh picks to filter immediately
+        await loadPlayers(updatedPicks, true); // Silent update, no searching indicator
       }
       setSearchQuery('');
       // Clear admin picker after successful pick
@@ -213,8 +219,9 @@ export default function DraftBoardPage() {
     <main className="flex min-h-screen flex-col p-6">
       <div className="flex h-20 shrink-0 items-end rounded-lg bg-blue-500 p-4 md:h-32">
         <div className="flex items-center justify-between w-full">
-          <h1 className={`${lusitana.className} text-white text-3xl md:text-4xl`}>
-            Draft Board - Round {Math.min(draft.currentRound, draft.totalRounds)}/{draft.totalRounds}
+          <h1 className={`${lusitana.className} text-white text-2xl md:text-4xl`}>
+            <span className="md:hidden">Draft - Rd {Math.min(draft.currentRound, draft.totalRounds)}</span>
+            <span className="hidden md:inline">Draft Board - Round {Math.min(draft.currentRound, draft.totalRounds)}/{draft.totalRounds}</span>
           </h1>
           <HomeButton />
         </div>
@@ -371,10 +378,15 @@ export default function DraftBoardPage() {
                           className="w-10 h-10 rounded-full object-cover"
                         />
                       )}
-                      <div>
+                      <div className="flex-1">
                         <p className="font-medium text-sm">{player.name}</p>
                         <p className="text-xs text-gray-600">
                           {player.position} - {player.team}
+                          {player.avgPoints > 0 && (
+                            <span className="ml-2 font-semibold text-blue-600">
+                              {player.avgPoints.toFixed(1)} PPG
+                            </span>
+                          )}
                         </p>
                       </div>
                     </div>

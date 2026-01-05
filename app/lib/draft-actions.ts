@@ -50,9 +50,12 @@ export async function createNewDraft(seasonYear: number, totalRounds: number) {
       .where(eq(seasons.year, seasonYear));
     
     if (seasonIds.length > 0) {
-      await db.delete(rosterEntries).where(
-        eq(rosterEntries.seasonId, seasonIds[0].id)
-      );
+      // Delete roster entries for ALL seasons for this year
+      for (const season of seasonIds) {
+        await db.delete(rosterEntries).where(
+          eq(rosterEntries.seasonId, season.id)
+        );
+      }
     }
 
     // Delete any existing draft for this season
@@ -98,6 +101,49 @@ export async function createNewDraft(seasonYear: number, totalRounds: number) {
   } catch (error) {
     console.error('Error creating draft:', error);
     return { error: 'Failed to create draft' };
+  }
+}
+
+export async function deleteDraft(seasonYear: number) {
+  try {
+    // Get the draft for this season
+    const existingDrafts = await db
+      .select()
+      .from(drafts)
+      .where(eq(drafts.seasonYear, seasonYear));
+    
+    if (existingDrafts.length === 0) {
+      return { error: 'No draft found for this season' };
+    }
+
+    // Delete all related data
+    for (const draft of existingDrafts) {
+      await db.delete(draftPicks).where(eq(draftPicks.draftId, draft.id));
+      await db.delete(draftOrder).where(eq(draftOrder.draftId, draft.id));
+      await db.delete(drafts).where(eq(drafts.id, draft.id));
+    }
+
+    // Clear all existing rosters for this season
+    const seasonIds = await db
+      .select({ id: seasons.id })
+      .from(seasons)
+      .where(eq(seasons.year, seasonYear));
+    
+    if (seasonIds.length > 0) {
+      // Delete roster entries for ALL seasons for this year
+      for (const season of seasonIds) {
+        await db.delete(rosterEntries).where(
+          eq(rosterEntries.seasonId, season.id)
+        );
+      }
+    }
+
+    revalidatePath('/admin/draft');
+    revalidatePath('/draft');
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting draft:', error);
+    return { error: 'Failed to delete draft' };
   }
 }
 
