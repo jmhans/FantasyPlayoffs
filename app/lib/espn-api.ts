@@ -22,9 +22,15 @@ export interface ESPNPlayer {
 
 export async function fetchNFLPlayers(): Promise<ESPNPlayer[]> {
   try {
+    console.log('[ESPN API] Fetching teams...');
     // Fetch teams
     const teamsResponse = await fetch(`${ESPN_API_BASE}/teams?limit=32`);
+    if (!teamsResponse.ok) {
+      console.error(`[ESPN API] Teams API returned ${teamsResponse.status}`);
+      throw new Error(`ESPN API returned ${teamsResponse.status}`);
+    }
     const teamsData = await teamsResponse.json();
+    console.log(`[ESPN API] Found ${teamsData.sports[0].leagues[0].teams.length} teams`);
     
     const allPlayers: ESPNPlayer[] = [];
     const allowedPositions = ['QB', 'WR', 'RB', 'TE'];
@@ -34,9 +40,14 @@ export async function fetchNFLPlayers(): Promise<ESPNPlayer[]> {
       try {
         const teamId = team.team.id;
         const teamAbbreviation = team.team.abbreviation;
+        console.log(`[ESPN API] Fetching roster for ${teamAbbreviation} (${teamId})...`);
         const rosterResponse = await fetch(
           `${ESPN_API_BASE}/teams/${teamId}/roster`
         );
+        if (!rosterResponse.ok) {
+          console.warn(`[ESPN API] Roster API returned ${rosterResponse.status} for team ${teamAbbreviation}`);
+          continue;
+        }
         const rosterData = await rosterResponse.json();
         
         if (rosterData.athletes) {
@@ -55,14 +66,20 @@ export async function fetchNFLPlayers(): Promise<ESPNPlayer[]> {
                   abbreviation: teamAbbreviation
                 }
               }));
+            console.log(`[ESPN API] ${teamAbbreviation}: ${playersWithTeam.length} fantasy players`);
             allPlayers.push(...playersWithTeam);
+          } else {
+            console.warn(`[ESPN API] ${teamAbbreviation}: No offense group found`);
           }
+        } else {
+          console.warn(`[ESPN API] ${teamAbbreviation}: No athletes data`);
         }
       } catch (error) {
-        console.error(`Error fetching roster for team ${team.team.id}:`, error);
+        console.error(`[ESPN API] Error fetching roster for team ${team.team.id}:`, error);
       }
     }
     
+    console.log(`[ESPN API] Total players fetched: ${allPlayers.length}`);
     return allPlayers;
   } catch (error) {
     console.error('Error fetching NFL players:', error);

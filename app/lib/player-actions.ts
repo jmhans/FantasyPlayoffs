@@ -8,7 +8,9 @@ import { revalidatePath } from 'next/cache';
 
 export async function syncPlayersFromESPN() {
   try {
+    console.log('[Player Sync] Starting ESPN player sync...');
     const espnPlayers = await fetchNFLPlayers();
+    console.log(`[Player Sync] Fetched ${espnPlayers.length} players from ESPN API`);
     let syncedCount = 0;
     
     for (const espnPlayer of espnPlayers) {
@@ -44,11 +46,15 @@ export async function syncPlayersFromESPN() {
         }
         
         syncedCount++;
+        if (syncedCount % 50 === 0) {
+          console.log(`[Player Sync] Progress: ${syncedCount} players synced...`);
+        }
       } catch (error) {
         console.error(`Error syncing player ${espnPlayer.displayName}:`, error);
       }
     }
     
+    console.log(`[Player Sync] Complete: ${syncedCount} players synced successfully`);
     revalidatePath('/');
     return { success: true, count: syncedCount };
   } catch (error) {
