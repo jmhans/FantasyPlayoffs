@@ -241,28 +241,28 @@ export default function Home() {
               {standings.map((participant, index) => (
                 <div
                   key={participant.participantId}
-                  className="mb-2 w-full rounded-md bg-white p-3"
+                  className="mb-2 w-full rounded-md bg-white dark:bg-gray-700 p-3 border border-gray-200 dark:border-gray-600"
                 >
                   <div className="flex items-start justify-between pb-2">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-lg font-bold">#{index + 1}</span>
-                        <p className="text-base font-medium">
+                        <span className="text-lg font-bold text-gray-900 dark:text-white">#{index + 1}</span>
+                        <p className="text-base font-medium text-gray-900 dark:text-white">
                           {participant.participantName}
                         </p>
                         {!participant.auth0Id && (
-                          <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800">
+                          <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-600 px-2 py-0.5 text-xs font-medium text-gray-800 dark:text-gray-200">
                             Unclaimed
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-gray-500 dark:text-gray-300">
                         {participant.totalPoints.toFixed(2)} points
                       </p>
                     </div>
                     <Link
                       href={`/roster/${participant.participantId}`}
-                      className="rounded-md border px-3 py-1.5 text-sm hover:bg-gray-100 whitespace-nowrap"
+                      className="rounded-md border border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-600 px-3 py-1.5 text-sm text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-500 whitespace-nowrap"
                     >
                       View Roster
                     </Link>
