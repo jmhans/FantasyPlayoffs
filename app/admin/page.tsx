@@ -51,6 +51,28 @@ export default function AdminPage() {
       </div>
 
       <div className="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {/* Import Players Card */}
+        <Link
+          href="/admin/import-players"
+          className="group rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition-all hover:border-blue-500 hover:shadow-md"
+        >
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+              <svg className="h-6 w-6" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                <path d="M12 4v16m8-8H4"></path>
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600">
+                Import Players
+              </h2>
+              <p className="text-sm text-gray-500">
+                Select teams and positions
+              </p>
+            </div>
+          </div>
+        </Link>
+
         {/* Sync Players Card */}
         <Link
           href="/admin/sync-players"
