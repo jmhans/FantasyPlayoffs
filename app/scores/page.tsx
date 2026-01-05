@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { lusitana } from '@/app/ui/fonts';
 import { getLivePlayerStats } from '@/app/lib/scoring-actions';
@@ -43,7 +43,7 @@ export default function ScoresPage() {
     setMounted(true);
   }, []);
 
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     try {
       console.log(`[Client] Loading stats for year ${currentYear}, week ${selectedWeek || 'live'}`);
       const data = await getLivePlayerStats(currentYear, selectedWeek);
@@ -57,7 +57,7 @@ export default function ScoresPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentYear, selectedWeek]);
 
   useEffect(() => {
     loadStats();
@@ -70,7 +70,7 @@ export default function ScoresPage() {
 
       return () => clearInterval(interval);
     }
-  }, [selectedWeek]);
+  }, [selectedWeek, loadStats]);
 
   const formatStatLine = (player: PlayerStats) => {
     const parts = [];

@@ -90,7 +90,7 @@ export default function SyncProjectionsPage() {
               <div>
                 <h3 className="text-sm font-medium text-yellow-800 mb-1">About Projections</h3>
                 <ul className="text-sm text-yellow-700 space-y-1">
-                  <li>• Projections are fetched from Sleeper's API</li>
+                  <li>• Projections are fetched from Sleeper&apos;s API</li>
                   <li>• Uses Half PPR scoring to match your league settings</li>
                   <li>• Projections may be limited or unavailable for playoff weeks</li>
                   <li>• Sync once per week or when matchups change</li>
@@ -130,7 +130,7 @@ export default function SyncProjectionsPage() {
                     <p className="text-sm text-green-700">
                       Updated {result.updated} players with projections
                     </p>
-                    {result.skipped > 0 && (
+                    {result.skipped && result.skipped > 0 && (
                       <p className="text-sm text-green-600 mt-1">
                         Skipped {result.skipped} players (no projection available or no ESPN ID)
                       </p>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { lusitana } from '@/app/ui/fonts';
@@ -39,55 +39,10 @@ export default function DraftBoardPage() {
     }
   }, [user, userIsAdmin]);
 
-  useEffect(() => {
-    loadDraftData();
-  }, []);
-
   // Track picks length to only re-filter when it actually changes
   const [lastPicksCount, setLastPicksCount] = useState(0);
 
-  useEffect(() => {
-    // Only search if we have draft loaded
-    if (!draft) return;
-    
-    // Only search if we have picks loaded on first load
-    if (picks.length === 0 && lastPicksCount === 0) {
-      // First load after draft is fetched
-      loadPlayers(undefined, true); // Silent initial load
-      setLastPicksCount(picks.length);
-      return;
-    }
-
-    // Only reload if picks count actually changed (a new pick was made)
-    if (picks.length !== lastPicksCount) {
-      loadPlayers(undefined, true); // Silent reload when picks change
-      setLastPicksCount(picks.length);
-    }
-  }, [picks.length, draft]);
-
-  // Separate effect for search query changes
-  useEffect(() => {
-    if (!draft) return;
-    if (searchQuery === '') return; // Don't search on empty query
-    
-    const delayDebounce = setTimeout(() => {
-      loadPlayers(undefined, false); // Show searching indicator for user searches
-    }, 300);
-
-    return () => clearTimeout(delayDebounce);
-  }, [searchQuery, draft]);
-
-  useEffect(() => {
-    if (!autoRefresh) return;
-
-    const interval = setInterval(() => {
-      loadDraftData(true);
-    }, 3000); // Refresh every 3 seconds
-
-    return () => clearInterval(interval);
-  }, [autoRefresh]);
-
-  async function loadDraftData(silent = false) {
+  const loadDraftData = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     
     try {
@@ -114,9 +69,9 @@ export default function DraftBoardPage() {
     } finally {
       if (!silent) setLoading(false);
     }
-  }
+  }, [currentYear]);
 
-  async function loadPlayers(draftedPicks?: any[], silent = false) {
+  const loadPlayers = useCallback(async (draftedPicks?: any[], silent = false) => {
     if (!silent) setSearching(true);
     try {
       const data = await searchPlayers(searchQuery);
@@ -134,7 +89,52 @@ export default function DraftBoardPage() {
     } finally {
       if (!silent) setSearching(false);
     }
-  }
+  }, [searchQuery, picks]);
+
+  useEffect(() => {
+    loadDraftData();
+  }, [loadDraftData]);
+
+  useEffect(() => {
+    // Only search if we have draft loaded
+    if (!draft) return;
+    
+    // Only search if we have picks loaded on first load
+    if (picks.length === 0 && lastPicksCount === 0) {
+      // First load after draft is fetched
+      loadPlayers(undefined, true); // Silent initial load
+      setLastPicksCount(picks.length);
+      return;
+    }
+
+    // Only reload if picks count actually changed (a new pick was made)
+    if (picks.length !== lastPicksCount) {
+      loadPlayers(undefined, true); // Silent reload when picks change
+      setLastPicksCount(picks.length);
+    }
+  }, [picks.length, draft, lastPicksCount, loadPlayers]);
+
+  // Separate effect for search query changes
+  useEffect(() => {
+    if (!draft) return;
+    if (searchQuery === '') return; // Don't search on empty query
+    
+    const delayDebounce = setTimeout(() => {
+      loadPlayers(undefined, false); // Show searching indicator for user searches
+    }, 300);
+
+    return () => clearTimeout(delayDebounce);
+  }, [searchQuery, draft, loadPlayers]);
+
+  useEffect(() => {
+    if (!autoRefresh) return;
+
+    const interval = setInterval(() => {
+      loadDraftData(true);
+    }, 3000); // Refresh every 3 seconds
+
+    return () => clearInterval(interval);
+  }, [autoRefresh, loadDraftData]);
 
   async function handleDraftPick(playerId: number) {
     if (!draft || !currentPicker) return;
@@ -372,6 +372,7 @@ export default function DraftBoardPage() {
                   >
                     <div className="flex items-center gap-3 flex-1">
                       {player.imageUrl && (
+                        // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={player.imageUrl}
                           alt={player.name}

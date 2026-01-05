@@ -368,7 +368,7 @@ export async function getPlayerStats(espnId: string, week?: number): Promise<Pla
       const espnStats = gameStats.get(espnId);
       
       if (espnStats) {
-        const fullStats = {
+        const fullStats: PlayerStats = {
           playerId: 0, // Will be filled from DB if needed
           playerName: espnStats.playerName || '',
           espnId,
@@ -383,6 +383,7 @@ export async function getPlayerStats(espnId: string, week?: number): Promise<Pla
           receivingYards: espnStats.receivingYards || 0,
           receivingTouchdowns: espnStats.receivingTouchdowns || 0,
           fantasyPoints: 0,
+          projectedPoints: null,
           gameStatus: game.status.type.state,
           lastUpdated: new Date(),
         };

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { lusitana } from '@/app/ui/fonts';
 import HomeButton from '@/app/ui/home-button';
@@ -19,11 +19,7 @@ export default function AdminDraftPage() {
   const now = new Date();
   const currentYear = now.getMonth() < 8 ? now.getFullYear() - 1 : now.getFullYear();
 
-  useEffect(() => {
-    loadDraft();
-  }, []);
-
-  async function loadDraft() {
+  const loadDraft = useCallback(async () => {
     setLoading(true);
     try {
       const draftData = await getCurrentDraft(currentYear);
@@ -36,7 +32,11 @@ export default function AdminDraftPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [currentYear]);
+
+  useEffect(() => {
+    loadDraft();
+  }, [loadDraft]);
 
   async function handleCreateDraft() {
     if (draft && !showResetOptions && !confirm('This will clear all rosters and create a new draft. Continue?')) {

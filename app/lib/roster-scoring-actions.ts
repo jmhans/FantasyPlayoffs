@@ -72,6 +72,12 @@ export async function calculateRosterScores(
 
     // Process each roster entry
     for (const roster of rosters) {
+      // Skip if playerId is null
+      if (!roster.playerId) {
+        skipped++;
+        continue;
+      }
+
       // Get the player's actual stats for this NFL week
       const actuals = await db
         .select({
