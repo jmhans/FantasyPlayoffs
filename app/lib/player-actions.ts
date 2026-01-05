@@ -143,15 +143,18 @@ export async function getAllPlayers() {
  * Import players from specific NFL teams and positions
  */
 export async function importPlayersFromTeams(teams: string[], positions: string[]) {
+  const logs: string[] = [];
+  
   try {
-    console.log(`[Player Import] Starting import for teams: ${teams.join(', ')}`);
-    console.log(`[Player Import] Positions: ${positions.join(', ')}`);
+    logs.push(`Starting import for teams: ${teams.join(', ')}`);
+    logs.push(`Positions: ${positions.join(', ')}`);
     
     const ESPN_API_BASE = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl';
     let importedCount = 0;
     let teamsProcessed = 0;
     
     // Fetch teams data to get team IDs
+    logs.push('Fetching teams from ESPN...');
     const teamsResponse = await fetch(`${ESPN_API_BASE}/teams?limit=32`);
     if (!teamsResponse.ok) {
       throw new Error(`ESPN API returned ${teamsResponse.status}`);
@@ -163,7 +166,7 @@ export async function importPlayersFromTeams(teams: string[], positions: string[
       teams.includes(team.team.abbreviation)
     );
     
-    console.log(`[Player Import] Found ${selectedTeams.length} matching teams`);
+    logs.push(`Found ${selectedTeams.length} matching teams`);
     
     // For each selected team, fetch roster
     for (const teamData of selectedTeams) {
@@ -171,70 +174,82 @@ export async function importPlayersFromTeams(teams: string[], positions: string[
         const teamId = teamData.team.id;
         const teamAbbreviation = teamData.team.abbreviation;
         
-        console.log(`[Player Import] Fetching roster for ${teamAbbreviation}...`);
+        logs.push(`\nFetching roster for ${teamAbbreviation}...`);
         
         const rosterResponse = await fetch(
           `${ESPN_API_BASE}/teams/${teamId}/roster`
         );
         
         if (!rosterResponse.ok) {
-          console.warn(`[Player Import] Roster API returned ${rosterResponse.status} for ${teamAbbreviation}`);
+          logs.push(`⚠️ Roster API returned ${rosterResponse.status} for ${teamAbbreviation}`);
           continue;
         }
         
         const rosterData = await rosterResponse.json();
         
-        if (rosterData.athletes) {
-          // Only process offense group
-          const offenseGroup = rosterData.athletes.find((group: any) => group.position === 'offense');
-          
-          if (offenseGroup && offenseGroup.items) {
-            // Filter for selected positions
-            const filteredPlayers = offenseGroup.items.filter((player: any) => 
-              positions.includes(player.position?.abbreviation)
-            );
+        if (!rosterData.athletes) {
+          logs.push(`⚠️ ${teamAbbreviation}: No athletes data found`);
+          continue;
+        }
+        
+        // Only process offense group
+        const offenseGroup = rosterData.athletes.find((group: any) => group.position === 'offense');
+        
+        if (!offenseGroup) {
+          logs.push(`⚠️ ${teamAbbreviation}: No offense group found`);
+          logs.push(`Available groups: ${rosterData.athletes.map((g: any) => g.position).join(', ')}`);
+          continue;
+        }
+        
+        if (!offenseGroup.items) {
+          logs.push(`⚠️ ${teamAbbreviation}: Offense group has no items`);
+          continue;
+        }
+        
+        // Filter for selected positions
+        const filteredPlayers = offenseGroup.items.filter((player: any) => 
+          positions.includes(player.position?.abbreviation)
+        );
+        
+        logs.push(`${teamAbbreviation}: ${filteredPlayers.length} players (${offenseGroup.items.length} total offensive players)`);
+        
+        // Save each player to database
+        for (const espnPlayer of filteredPlayers) {
+          try {
+            // Check if player already exists
+            const existing = await db
+              .select()
+              .from(players)
+              .where(eq(players.espnId, espnPlayer.id))
+              .limit(1);
             
-            console.log(`[Player Import] ${teamAbbreviation}: ${filteredPlayers.length} players match position filters`);
+            const playerData = {
+              espnId: espnPlayer.id,
+              name: espnPlayer.displayName,
+              position: espnPlayer.position?.abbreviation || 'UNK',
+              team: teamAbbreviation,
+              jerseyNumber: espnPlayer.jersey || null,
+              status: espnPlayer.status?.type || 'ACTIVE',
+              imageUrl: espnPlayer.headshot?.href || null,
+              isDraftEligible: true, // Mark as draft eligible by default
+              metadata: espnPlayer as any,
+              updatedAt: new Date(),
+            };
             
-            // Save each player to database
-            for (const espnPlayer of filteredPlayers) {
-              try {
-                // Check if player already exists
-                const existing = await db
-                  .select()
-                  .from(players)
-                  .where(eq(players.espnId, espnPlayer.id))
-                  .limit(1);
-                
-                const playerData = {
-                  espnId: espnPlayer.id,
-                  name: espnPlayer.displayName,
-                  position: espnPlayer.position?.abbreviation || 'UNK',
-                  team: teamAbbreviation,
-                  jerseyNumber: espnPlayer.jersey || null,
-                  status: espnPlayer.status?.type || 'ACTIVE',
-                  imageUrl: espnPlayer.headshot?.href || null,
-                  isDraftEligible: true, // Mark as draft eligible by default
-                  metadata: espnPlayer as any,
-                  updatedAt: new Date(),
-                };
-                
-                if (existing.length > 0) {
-                  // Update existing player
-                  await db
-                    .update(players)
-                    .set(playerData)
-                    .where(eq(players.id, existing[0].id));
-                } else {
-                  // Insert new player
-                  await db.insert(players).values(playerData);
-                }
-                
-                importedCount++;
-              } catch (error) {
-                console.error(`[Player Import] Error saving player ${espnPlayer.displayName}:`, error);
-              }
+            if (existing.length > 0) {
+              // Update existing player
+              await db
+                .update(players)
+                .set(playerData)
+                .where(eq(players.id, existing[0].id));
+            } else {
+              // Insert new player
+              await db.insert(players).values(playerData);
             }
+            
+            importedCount++;
+          } catch (error) {
+            logs.push(`❌ Error saving ${espnPlayer.displayName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
           }
         }
         
@@ -244,21 +259,23 @@ export async function importPlayersFromTeams(teams: string[], positions: string[
         await new Promise(resolve => setTimeout(resolve, 500));
         
       } catch (error) {
-        console.error(`[Player Import] Error processing team ${teamData.team.abbreviation}:`, error);
+        logs.push(`❌ Error processing team ${teamData.team.abbreviation}: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
     
-    console.log(`[Player Import] Complete: ${importedCount} players imported from ${teamsProcessed} teams`);
+    logs.push(`\n✅ Complete: ${importedCount} players imported from ${teamsProcessed} teams`);
     revalidatePath('/');
     return { 
       success: true, 
       count: importedCount,
-      teamsProcessed 
+      teamsProcessed,
+      logs: logs.join('\n')
     };
   } catch (error) {
-    console.error('[Player Import] Error:', error);
+    logs.push(`❌ Fatal error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     return { 
-      error: error instanceof Error ? error.message : 'Failed to import players'
+      error: error instanceof Error ? error.message : 'Failed to import players',
+      logs: logs.join('\n')
     };
   }
 }
