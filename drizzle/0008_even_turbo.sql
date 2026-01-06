@@ -1,0 +1,2 @@
+ALTER TABLE "fantasy_playoffs"."weekly_scores" ALTER COLUMN "points" SET DATA TYPE real;--> statement-breakpoint
+ALTER TABLE "fantasy_playoffs"."players" ADD COLUMN "is_draft_eligible" boolean DEFAULT true NOT NULL;

@@ -69,9 +69,9 @@ export default function ImportPlayersPage() {
       );
       
       if (result.error) {
-        setMessage(`❌ ${result.error}`);
+        setMessage(`❌ ${result.error}\n\n${result.logs || ''}`);
       } else {
-        setMessage(`✅ Success! Imported ${result.count} players from ${result.teamsProcessed} teams`);
+        setMessage(`✅ Success! Imported ${result.count} players from ${result.teamsProcessed} teams\n\n${result.logs || ''}`);
       }
     } catch (error) {
       setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
