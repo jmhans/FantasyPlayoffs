@@ -1,30 +1,74 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import { lusitana } from '@/app/ui/fonts';
 import { getParticipantById, getRosterWithScores } from '@/app/lib/actions';
 import HomeButton from '@/app/ui/home-button';
+import { useUser } from '@auth0/nextjs-auth0/client';
+import { isAdmin } from '@/app/lib/auth-utils';
 
-export const dynamic = 'force-dynamic';
+type Participant = {
+  id: number;
+  name: string;
+  auth0Id: string | null;
+};
 
-export default async function RosterPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id: idString } = await params;
+type RosterEntry = {
+  id: number;
+  playerName: string;
+  position: string | null;
+  team: string | null;
+  weeklyScores: { [week: number]: number };
+  totalPoints: number;
+};
+
+export default function RosterPage() {
+  const params = useParams();
+  const { user } = useUser();
+  const idString = params.id as string;
   const id = parseInt(idString);
   
-  if (isNaN(id)) {
-    notFound();
+  const [participant, setParticipant] = useState<Participant | null>(null);
+  const [rosterWithScores, setRosterWithScores] = useState<RosterEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (isNaN(id)) {
+      notFound();
+    }
+
+    async function loadData() {
+      const participantData = await getParticipantById(id);
+      
+      if (!participantData) {
+        notFound();
+      }
+
+      const rosterData = await getRosterWithScores(id);
+      
+      setParticipant(participantData);
+      setRosterWithScores(rosterData);
+      setLoading(false);
+    }
+
+    loadData();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <main className="flex min-h-screen flex-col p-6">
+        <div className="flex justify-center items-center h-screen">
+          <div className="text-gray-600">Loading...</div>
+        </div>
+      </main>
+    );
   }
 
-  const participant = await getParticipantById(id);
-  
   if (!participant) {
     notFound();
   }
-
-  const rosterWithScores = await getRosterWithScores(id);
 
   return (
     <main className="flex min-h-screen flex-col p-6">
@@ -34,12 +78,14 @@ export default async function RosterPage({
             {participant.name}&apos;s Roster
           </h1>
           <div className="flex gap-2">
-            <Link
-              href={`/roster/${id}/add-player`}
-              className="flex h-10 items-center rounded-lg bg-green-600 px-4 text-sm font-medium text-white transition-colors hover:bg-green-500"
-            >
-              Add Player
-            </Link>
+            {user && isAdmin(user) && (
+              <Link
+                href={`/roster/${id}/add-player`}
+                className="flex h-10 items-center rounded-lg bg-green-600 px-4 text-sm font-medium text-white transition-colors hover:bg-green-500"
+              >
+                Add Player
+              </Link>
+            )}
             <HomeButton />
           </div>
         </div>

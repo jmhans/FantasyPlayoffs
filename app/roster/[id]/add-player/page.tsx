@@ -6,10 +6,13 @@ import { useRouter, useParams } from 'next/navigation';
 import { lusitana } from '@/app/ui/fonts';
 import { addPlayerToRoster } from '@/app/lib/roster-actions';
 import { searchPlayers } from '@/app/lib/player-actions';
+import { useUser } from '@auth0/nextjs-auth0/client';
+import { isAdmin } from '@/app/lib/auth-utils';
 
 export default function AddPlayerPage() {
   const router = useRouter();
   const params = useParams();
+  const { user, isLoading } = useUser();
   const participantId = parseInt(params.id as string);
   
   const [players, setPlayers] = useState<any[]>([]);
@@ -18,6 +21,13 @@ export default function AddPlayerPage() {
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [addingPlayerId, setAddingPlayerId] = useState<number | null>(null);
+
+  // Check if user is admin, redirect if not
+  useEffect(() => {
+    if (!isLoading && (!user || !isAdmin(user))) {
+      router.push(`/roster/${participantId}`);
+    }
+  }, [user, isLoading, router, participantId]);
 
   const loadPlayers = useCallback(async () => {
     setSearching(true);

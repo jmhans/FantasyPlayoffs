@@ -4,6 +4,8 @@ import { db } from '@/app/lib/db';
 import { rosterEntries, players, seasons } from '@/app/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
+import { getSession } from '@auth0/nextjs-auth0';
+import { isAdmin } from '@/app/lib/auth-utils';
 
 /**
  * Get or create a season for a participant
@@ -38,6 +40,12 @@ async function getOrCreateSeason(participantId: number, year: number) {
 
 export async function addPlayerToRoster(participantId: number, playerId: number) {
   try {
+    // Check if user is admin
+    const session = await getSession();
+    if (!session?.user || !isAdmin(session.user)) {
+      return { error: 'Unauthorized: Admin access required' };
+    }
+
     const currentYear = new Date().getFullYear();
     
     // Get or create season
@@ -76,6 +84,12 @@ export async function addPlayerToRoster(participantId: number, playerId: number)
 
 export async function removePlayerFromRoster(rosterEntryId: number, participantId: number) {
   try {
+    // Check if user is admin
+    const session = await getSession();
+    if (!session?.user || !isAdmin(session.user)) {
+      return { error: 'Unauthorized: Admin access required' };
+    }
+
     await db.delete(rosterEntries).where(eq(rosterEntries.id, rosterEntryId));
     
     revalidatePath(`/roster/${participantId}`);
