@@ -1,7 +1,7 @@
 'use server';
 
 import { db } from '@/app/lib/db';
-import { players, rosterEntries, seasons, weeklyActuals } from '@/app/lib/db/schema';
+import { players, rosterEntries, seasons, weeklyActuals, weeklyScores } from '@/app/lib/db/schema';
 import { eq, inArray, and } from 'drizzle-orm';
 
 interface PlayerStats {
@@ -82,8 +82,14 @@ async function getCurrentWeekGames(): Promise<{ week: number; games: ESPNGame[] 
     
     const data = await response.json();
     
+    // ESPN returns seasonType: 3 for playoffs with week 1, 2, 3, 4
+    // We want to store as NFL weeks 19, 20, 21, 22 to avoid overwriting regular season
+    const espnWeek = data.week?.number || 1;
+    const seasonType = data.season?.type || 2; // 2=regular, 3=playoffs
+    const actualWeek = seasonType === 3 ? espnWeek + 18 : espnWeek;
+    
     return {
-      week: data.week?.number || 1,
+      week: actualWeek,
       games: data.events || [],
     };
   } catch (error) {
@@ -186,17 +192,17 @@ function calculateFantasyPoints(stats: {
   let points = 0;
   
   // Passing
-  points += Math.floor(stats.passingYards / 25);
+  points += stats.passingYards / 25;
   points += stats.passingTouchdowns * 6;
   points -= stats.interceptions * 2;
   
   // Rushing
-  points += Math.floor(stats.rushingYards / 10);
+  points += stats.rushingYards / 10;
   points += stats.rushingTouchdowns * 6;
   
   // Receiving (Half PPR)
   points += stats.receptions * 0.5;
-  points += Math.floor(stats.receivingYards / 10);
+  points += stats.receivingYards / 10;
   points += stats.receivingTouchdowns * 6;
   
   return points;
@@ -349,10 +355,178 @@ export async function getLivePlayerStats(seasonYear: number, week?: number): Pro
       }
     }
     
-    return Array.from(playerStatsMap.values());
+    const results = Array.from(playerStatsMap.values());
+    
+    // Save live stats to database as actuals for the current week
+    if (results.length > 0 && !week) {
+      console.log(`[getLivePlayerStats] Saving ${results.length} live stats to database for week ${currentWeek}`);
+      await saveLiveStatsToActuals(seasonYear, currentWeek, results);
+      
+      // Also calculate roster scores from the actuals
+      await updateRosterScoresFromActuals(seasonYear, currentWeek);
+    }
+    
+    return results;
   } catch (error) {
     console.error('Error fetching live player stats:', error);
     return [];
+  }
+}
+
+/**
+ * Save live player stats to weeklyActuals table
+ */
+async function saveLiveStatsToActuals(season: number, week: number, stats: PlayerStats[]) {
+  try {
+    let updated = 0;
+    let inserted = 0;
+    
+    for (const stat of stats) {
+      if (!stat.playerId || !stat.espnId) continue;
+      
+      // Check if entry already exists
+      const existing = await db
+        .select()
+        .from(weeklyActuals)
+        .where(
+          and(
+            eq(weeklyActuals.playerId, stat.playerId),
+            eq(weeklyActuals.season, season),
+            eq(weeklyActuals.week, week)
+          )
+        )
+        .limit(1);
+      
+      const statsData = {
+        passingYards: stat.passingYards,
+        passingTouchdowns: stat.passingTouchdowns,
+        interceptions: stat.interceptions,
+        rushingYards: stat.rushingYards,
+        rushingTouchdowns: stat.rushingTouchdowns,
+        receptions: stat.receptions,
+        receivingYards: stat.receivingYards,
+        receivingTouchdowns: stat.receivingTouchdowns,
+      };
+      
+      if (existing.length > 0) {
+        // Update existing record
+        await db
+          .update(weeklyActuals)
+          .set({
+            fantasyPoints: stat.fantasyPoints,
+            stats: statsData,
+            updatedAt: new Date(),
+          })
+          .where(eq(weeklyActuals.id, existing[0].id));
+        updated++;
+      } else {
+        // Insert new record
+        await db.insert(weeklyActuals).values({
+          playerId: stat.playerId,
+          espnId: stat.espnId,
+          season,
+          week,
+          fantasyPoints: stat.fantasyPoints,
+          stats: statsData,
+        });
+        inserted++;
+      }
+    }
+    
+    console.log(`[saveLiveStatsToActuals] Saved stats for week ${week}: ${inserted} inserted, ${updated} updated`);
+  } catch (error) {
+    console.error('[saveLiveStatsToActuals] Error saving stats:', error);
+  }
+}
+
+/**
+ * Update roster scores (weeklyScores) from weeklyActuals
+ * This connects player stats to roster entries
+ */
+async function updateRosterScoresFromActuals(season: number, week: number) {
+  try {
+    console.log(`[updateRosterScoresFromActuals] Calculating roster scores for season ${season}, week ${week}`);
+    
+    // Get all active roster entries for this season
+    const rosters = await db
+      .select({
+        rosterEntryId: rosterEntries.id,
+        playerId: rosterEntries.playerId,
+        playerName: rosterEntries.playerName,
+      })
+      .from(rosterEntries)
+      .innerJoin(seasons, eq(rosterEntries.seasonId, seasons.id))
+      .where(and(
+        eq(seasons.year, season),
+        eq(seasons.isActive, true)
+      ));
+
+    let updated = 0;
+    let skipped = 0;
+
+    // Process each roster entry
+    for (const roster of rosters) {
+      if (!roster.playerId) {
+        skipped++;
+        continue;
+      }
+
+      // Get the player's actual stats for this week
+      const actuals = await db
+        .select({
+          fantasyPoints: weeklyActuals.fantasyPoints,
+        })
+        .from(weeklyActuals)
+        .where(
+          and(
+            eq(weeklyActuals.playerId, roster.playerId),
+            eq(weeklyActuals.season, season),
+            eq(weeklyActuals.week, week)
+          )
+        );
+
+      if (actuals.length === 0) {
+        skipped++;
+        continue;
+      }
+
+      const points = Number(actuals[0].fantasyPoints);
+
+      // Check if weekly score already exists
+      const existing = await db
+        .select()
+        .from(weeklyScores)
+        .where(
+          and(
+            eq(weeklyScores.rosterEntryId, roster.rosterEntryId),
+            eq(weeklyScores.week, week)
+          )
+        );
+
+      if (existing.length > 0) {
+        // Update existing record
+        await db
+          .update(weeklyScores)
+          .set({
+            points,
+            updatedAt: new Date(),
+          })
+          .where(eq(weeklyScores.id, existing[0].id));
+      } else {
+        // Insert new record
+        await db.insert(weeklyScores).values({
+          rosterEntryId: roster.rosterEntryId,
+          week: week,
+          points,
+        });
+      }
+
+      updated++;
+    }
+
+    console.log(`[updateRosterScoresFromActuals] Updated ${updated} roster scores, skipped ${skipped}`);
+  } catch (error) {
+    console.error('[updateRosterScoresFromActuals] Error:', error);
   }
 }
 
