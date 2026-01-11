@@ -14,10 +14,15 @@
     "db:migrate:prod": "tsx scripts/migrate-prod.ts",
     "db:check-migrations": "tsx scripts/check-migrations.ts",
     "db:copy-players": "tsx scripts/copy-players-to-prod.ts",
-    "db:copy-from-prod": "tsx scripts/copy-prod-to-dev.ts"
+    "db:copy-from-prod": "tsx scripts/copy-prod-to-dev.ts",
+    "ios:open": "npx cap open ios",
+    "ios:sync": "npx cap sync ios"
   },
   "dependencies": {
     "@auth0/nextjs-auth0": "^3.5.0",
+    "@capacitor/cli": "^8.0.0",
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/ios": "^8.0.0",
     "@neondatabase/serverless": "^1.0.1",
     "@tailwindcss/forms": "^0.5.10",
     "@vercel/postgres": "^0.8.0",

@@ -34,3 +34,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# capacitor
+ios/App/Pods
+ios/App/Podfile.lock
+ios/App/App/public
+android/
+.capacitor/
