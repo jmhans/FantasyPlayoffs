@@ -13,7 +13,8 @@
     "db:studio": "drizzle-kit studio",
     "db:migrate:prod": "tsx scripts/migrate-prod.ts",
     "db:check-migrations": "tsx scripts/check-migrations.ts",
-    "db:copy-players": "tsx scripts/copy-players-to-prod.ts"
+    "db:copy-players": "tsx scripts/copy-players-to-prod.ts",
+    "db:copy-from-prod": "tsx scripts/copy-prod-to-dev.ts"
   },
   "dependencies": {
     "@auth0/nextjs-auth0": "^3.5.0",

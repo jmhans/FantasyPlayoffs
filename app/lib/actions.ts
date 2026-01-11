@@ -51,6 +51,14 @@ export async function getWeeklyScoresForRosterEntry(rosterEntryId: number) {
   }
 }
 
+// Map NFL week to playoff week (19->1, 20->2, 21->3, 22->4)
+function mapNFLWeekToPlayoffWeek(nflWeek: number): number | null {
+  if (nflWeek >= 19 && nflWeek <= 22) {
+    return nflWeek - 18;
+  }
+  return null;
+}
+
 // Get complete roster with scores for a participant
 export async function getRosterWithScores(participantId: number) {
   try {
@@ -84,8 +92,13 @@ export async function getRosterWithScores(participantId: number) {
       
       if (row.week !== null) {
         const entry = rosterMap.get(row.id);
-        entry.weeklyScores[row.week] = row.points || 0;
-        entry.totalPoints += row.points || 0;
+        // Map NFL playoff weeks (19-22) to playoff weeks (1-4) for display
+        const playoffWeek = mapNFLWeekToPlayoffWeek(row.week);
+        if (playoffWeek) {
+          entry.weeklyScores[playoffWeek] = row.points || 0;
+          entry.totalPoints += row.points || 0;
+        }
+        // Note: Regular season weeks are ignored for playoff fantasy league
       }
     });
 
@@ -105,7 +118,8 @@ export async function getStandings() {
         participantId: participants.id,
         participantName: participants.name,
         auth0Id: participants.auth0Id,
-        totalPoints: sql<number>`COALESCE(SUM(${weeklyScores.points}), 0)`,
+        // Only sum playoff weeks (NFL weeks 19-22)
+        totalPoints: sql<number>`COALESCE(SUM(CASE WHEN ${weeklyScores.week} >= 19 AND ${weeklyScores.week} <= 22 THEN ${weeklyScores.points} ELSE 0 END), 0)`,
       })
       .from(participants)
       .leftJoin(rosterEntries, eq(participants.id, rosterEntries.participantId))

@@ -230,7 +230,7 @@ export default function ScoresPage() {
                       {formatStatLine(player)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-blue-600">
-                      {player.fantasyPoints.toFixed(1)}
+                      {player.fantasyPoints}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
